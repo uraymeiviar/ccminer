@@ -7,9 +7,7 @@ else
 JANSSON_INCLUDES=
 endif
 
-EXTRA_DIST		= autogen.sh README.md README.txt LICENSE.txt \
-			  ccminer.sln ccminer.vcxproj ccminer.vcxproj.filters \
-			  compat/gettimeofday.c compat/getopt/getopt_long.c
+EXTRA_DIST		= autogen.sh README.md README.txt LICENSE.txt compat/gettimeofday.c compat/getopt/getopt_long.c
 
 SUBDIRS = compat
 
@@ -189,14 +187,18 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x17/x17.cu \
 			  x17/hmq17.cu \
 			  x17/cuda_x17_haval256.cu \
-			  x17/cuda_x17_sha512.cu 
-
-# scrypt
-ccminer_SOURCES += scrypt.cpp scrypt-jane.cpp \
-    scrypt/blake.cu scrypt/keccak.cu scrypt/sha256.cu \
-    scrypt/salsa_kernel.cu scrypt/test_kernel.cu \
-    scrypt/fermi_kernel.cu scrypt/kepler_kernel.cu \
-    scrypt/nv_kernel.cu scrypt/nv_kernel2.cu scrypt/titan_kernel.cu
+			  x17/cuda_x17_sha512.cu \
+			  scrypt.cpp scrypt-jane.cpp \
+    		  scrypt/blake.cu \
+    		  scrypt/keccak.cu \
+    		  scrypt/sha256.cu \
+    		  scrypt/salsa_kernel.cu \
+    		  scrypt/test_kernel.cu \
+    		  scrypt/fermi_kernel.cu \
+    		  scrypt/kepler_kernel.cu \
+    		  scrypt/nv_kernel.cu \
+    		  scrypt/nv_kernel2.cu \
+    		  scrypt/titan_kernel.cu
 
 if HAVE_NVML
 nvml_defs = -DUSE_WRAPNVML
@@ -208,7 +210,7 @@ ccminer_SOURCES += compat/winansi.c
 endif
 
 ccminer_LDFLAGS  = $(PTHREAD_FLAGS) @CUDA_LDFLAGS@
-ccminer_LDADD    = @LIBCURL@ @JANSSON_LIBS@ @PTHREAD_LIBS@ @WS2_LIBS@ @CUDA_LIBS@ @OPENMP_CFLAGS@ @LIBS@ $(nvml_libs)
+ccminer_LDADD    = @LIBCURL@ @JANSSON_LIBS@ @PTHREAD_LIBS@ @WS2_LIBS@ @OPENMP_CFLAGS@ @LIBS@ @CUDA_LIBS@ $(nvml_libs)
 ccminer_CPPFLAGS = @LIBCURL_CPPFLAGS@ @OPENMP_CFLAGS@ $(CPPFLAGS) $(PTHREAD_FLAGS) -fno-strict-aliasing $(JANSSON_INCLUDES) $(DEF_INCLUDES) $(nvml_defs)
 
 if HAVE_OSX
@@ -223,16 +225,19 @@ endif
 ccminer_LDADD += -lcuda
 
 nvcc_ARCH :=
+nvcc_ARCH += -gencode=arch=compute_70,code=\"sm_70,compute_70\"
+nvcc_ARCH += -gencode=arch=compute_62,code=\"sm_62,compute_62\"
 nvcc_ARCH += -gencode=arch=compute_61,code=\"sm_61,compute_61\"
+nvcc_ARCH += -gencode=arch=compute_53,code=\"sm_53,compute_53\"
 nvcc_ARCH += -gencode=arch=compute_52,code=\"sm_52,compute_52\"
 nvcc_ARCH += -gencode=arch=compute_50,code=\"sm_50,compute_50\"
 #nvcc_ARCH += -gencode=arch=compute_35,code=\"sm_35,compute_35\"
 #nvcc_ARCH += -gencode=arch=compute_30,code=\"sm_30,compute_30\"
 
 nvcc_FLAGS = $(nvcc_ARCH) @CUDA_INCLUDES@ -I. @CUDA_CFLAGS@
-nvcc_FLAGS += $(JANSSON_INCLUDES) --ptxas-options="-v"
+nvcc_FLAGS += $(JANSSON_INCLUDES) --ptxas-options="-v -O3 -warn-spills"
 
-# we're now targeting all major compute architectures within one binary.
+# we're now targeting all major compute  within one binary.
 .cu.o:
 	$(NVCC) $(nvcc_FLAGS) --maxrregcount=128 -o $@ -c $<
 

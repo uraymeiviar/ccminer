@@ -812,9 +812,9 @@ static bool work_decode(const json_t *val, struct work *work)
 	return true;
 }
 
-#define YES "yes!"
-#define YAY "yay!!!"
-#define BOO "booooo"
+#define YES "accepted"
+#define YAY "BLOCK!"
+#define BOO "rejected"
 
 int share_result(int result, int pooln, double sharediff, const char *reason)
 {
@@ -857,7 +857,7 @@ int share_result(int result, int pooln, double sharediff, const char *reason)
 		sprintf(solved, " solved: %u", p->solved_count);
 	}
 
-	applog(LOG_NOTICE, "accepted: %lu/%lu (%s), %s %s%s",
+	applog(LOG_NOTICE, "shares: %lu/%lu (%s), %s %s%s",
 			p->accepted_count,
 			p->accepted_count + p->rejected_count,
 			suppl, s, flag, solved);
@@ -2982,12 +2982,8 @@ wait_stratum_url:
 				static uint32_t last_block_height;
 				if ((!opt_quiet || !firstwork_time) && stratum.job.height != last_block_height) {
 					last_block_height = stratum.job.height;
-					if (net_diff > 0.)
-						applog(LOG_BLUE, "%s block %d, diff %.3f", algo_names[opt_algo],
+					applog(LOG_BLUE, "%s : %s#%d, diff %.3f", pool->short_url, algo_names[opt_algo],
 							stratum.job.height, net_diff);
-					else
-						applog(LOG_BLUE, "%s %s block %d", pool->short_url, algo_names[opt_algo],
-							stratum.job.height);
 				}
 				restart_threads();
 				if (check_dups || opt_showdiff)

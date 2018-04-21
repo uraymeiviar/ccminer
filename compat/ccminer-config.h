@@ -161,7 +161,7 @@
 #define PACKAGE_NAME "urayminer"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "http://github.com/uraymeiviar/ccminer"
+#define PACKAGE_URL "http://github.com/uraymeiviar/urayminer"
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "1.0"

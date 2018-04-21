@@ -1,4 +1,4 @@
-AC_INIT([urayminer], [1.0], [], [urayminer], [https://github.com/uraymeiviar/ccminer])
+AC_INIT([urayminer], [1.0], [], [urayminer], [https://github.com/uraymeiviar/urayminer])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM
@@ -100,6 +100,7 @@ AC_SUBST(JANSSON_LIBS)
 AC_SUBST(PTHREAD_FLAGS)
 AC_SUBST(PTHREAD_LIBS)
 AC_SUBST(WS2_LIBS)
+AC_SUBST(OPENMP_CFLAGS)
 
 AC_CONFIG_FILES([
 	Makefile
@@ -141,7 +142,7 @@ if test -n "$with_cuda" ; then
   fi
 else
   CUDA_INCLUDES="-I/usr/local/cuda/include"
-  CUDA_LIBS="-lcudart_static -lrt -static-libstdc++"
+  CUDA_LIBS="-lcudart_static -lrt"
   CUDA_LDFLAGS="-L/usr/local/cuda/lib$SUFFIX"
 fi
 
@@ -156,7 +157,5 @@ AC_SUBST(CUDA_INCLUDES)
 AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(NVCC)
-
-AC_SUBST(OPENMP_CFLAGS)
 
 AC_OUTPUT

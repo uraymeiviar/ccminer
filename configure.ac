@@ -1,4 +1,4 @@
-AC_INIT([ccminer], [2.2.5], [], [ccminer], [http://github.com/tpruvot/ccminer])
+AC_INIT([urayminer], [1.0], [], [urayminer], [https://github.com/uraymeiviar/ccminer])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM
@@ -134,14 +134,14 @@ NVCC="nvcc"
 
 if test -n "$with_cuda" ; then
   CUDA_INCLUDES="-I$with_cuda/include"
-  CUDA_LIBS="-lcudart"
+  CUDA_LIBS="-lcudart_static -lrt"
   CUDA_LDFLAGS="-L$with_cuda/lib$SUFFIX"
   if test -x "$with_cuda/bin/nvcc" ; then
     NVCC="$with_cuda/bin/nvcc"
   fi
 else
   CUDA_INCLUDES="-I/usr/local/cuda/include"
-  CUDA_LIBS="-lcudart -static-libstdc++"
+  CUDA_LIBS="-lcudart_static -lrt -static-libstdc++"
   CUDA_LDFLAGS="-L/usr/local/cuda/lib$SUFFIX"
 fi
 
@@ -157,6 +157,6 @@ AC_SUBST(CUDA_LIBS)
 AC_SUBST(CUDA_LDFLAGS)
 AC_SUBST(NVCC)
 
-AC_SUBST(OPENMP_CFLAGS) 
+AC_SUBST(OPENMP_CFLAGS)
 
 AC_OUTPUT

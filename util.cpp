@@ -2211,7 +2211,10 @@ void print_hash_tests(void)
 	printpfx("hmq1725", hash);
 
 	hsr_hash(&hash[0], &buf[0]);
-        printpfx("hsr", hash);
+	printpfx("hsr", hash);
+
+	bcd_hash(&hash[0], &buf[0]);
+    printpfx("bcd", hash);
 
 	jha_hash(&hash[0], &buf[0]);
 	printpfx("jha", hash);

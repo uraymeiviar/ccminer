@@ -237,6 +237,7 @@ Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
   -a, --algo=ALGO       specify the hash algorithm to use\n\
 			bastion     Hefty bastion\n\
+			bcd         BitcoinDiamond\n\
 			bitcore     Timetravel-10\n\
 			blake       Blake 256 (SFR)\n\
 			blake2s     Blake2-S 256 (NEVA)\n\
@@ -256,6 +257,7 @@ Options:\n\
 "			heavy       Heavycoin\n"
 #endif
 "			hmq1725     Doubloons / Espers\n\
+			hsr         X13+SM3\n\
 			jackpot     JHA v8\n\
 			keccak      Deprecated Keccak-256\n\
 			keccakc     Keccak-256 (CreativeCoin)\n\
@@ -294,6 +296,7 @@ Options:\n\
 			x14         X14\n\
 			x15         X15\n\
 			x16r        X16R (Raven)\n\
+			x16s	    X16S (Pidgeon)\n\
 			x17         X17\n\
 			wildkeccak  Boolberry\n\
 			zr5         ZR5 (ZiftrCoin)\n\
@@ -1707,6 +1710,7 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		case ALGO_TIMETRAVEL:
 		case ALGO_BITCORE:
 		case ALGO_X16R:
+		case ALGO_X16S:
 			work_set_target(work, sctx->job.diff / (256.0 * opt_difficulty));
 			break;
 		case ALGO_KECCAK:
@@ -2237,6 +2241,7 @@ static void *miner_thread(void *userdata)
 			case ALGO_JACKPOT:
 			case ALGO_JHA:
 			case ALGO_HSR:
+			case ALGO_BCD:
 			case ALGO_LYRA2v2:
 			case ALGO_PHI:
 			case ALGO_POLYTIMOS:
@@ -2373,6 +2378,9 @@ static void *miner_thread(void *userdata)
 		case ALGO_HSR:
 			rc = scanhash_hsr(thr_id, &work, max_nonce, &hashes_done);
 			break;
+		case ALGO_BCD:
+			rc = scanhash_bcd(thr_id, &work, max_nonce, &hashes_done);
+			break;
 #ifdef WITH_HEAVY_ALGO
 		case ALGO_HEAVY:
 			rc = scanhash_heavy(thr_id, &work, max_nonce, &hashes_done, work.maxvote, HEAVYCOIN_BLKHDR_SZ);
@@ -2503,6 +2511,9 @@ static void *miner_thread(void *userdata)
 			break;
 		case ALGO_X16R:
 			rc = scanhash_x16r(thr_id, &work, max_nonce, &hashes_done);
+			break;
+                case ALGO_X16S:
+                        rc = scanhash_x16s(thr_id, &work, max_nonce, &hashes_done);
 			break;
 		case ALGO_X17:
 			rc = scanhash_x17(thr_id, &work, max_nonce, &hashes_done);
@@ -3866,7 +3877,9 @@ int main(int argc, char *argv[])
 	// get opt_quiet early
 	parse_single_opt('q', argc, argv);
 
-	printf("*** ccminer " PACKAGE_VERSION " for nVidia GPUs by tpruvot@github ***\n");
+	printf("*** urayminer " PACKAGE_VERSION " for nVidia GPUs by uraymeiviar@github ***\n");
+	printf("*** optimized ccminer based on versions by tpruvot@github ***\n");
+
 	if (!opt_quiet) {
 		const char* arch = is_x64() ? "64-bits" : "32-bits";
 #ifdef _MSC_VER

@@ -1,3 +1,10 @@
+suprminer 1.1 (March 2018) optimized x16r algo without any dev fee.
+
+Most optimizations come from alexis, so please tip him (addr below)
+
+original README as follows:
+
+
 
 ccminer 2.2.5 (Feb 2018)                            "x16r algo"
 ---------------------------------------------------------------
@@ -16,6 +23,9 @@ DJM34:
 cbuchner v1.2:
   LTC donation address: LKS1WDKGED647msBQfLBHV3Ls8sveGncnm
   BTC donation address: 16hJF5mceSojnTD3ZTUDqdRhDyPJzoRakM
+
+alexis:
+  RVN donation address: RFg6gtkg6fFzsY64hWANTQC79yvNaQv8sL
 
 ***************************************************************
 
@@ -74,6 +84,7 @@ its command line interface and options.
 
   -a, --algo=ALGO       specify the algorithm to use
                           bastion     use to mine Joincoin
+                          bcd         use to mine Bitcoin Diamond
                           bitcore     use to mine Bitcore's Timetravel10
                           blake       use to mine Saffroncoin (Blake256)
                           blakecoin   use to mine Old Blake 256

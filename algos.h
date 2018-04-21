@@ -23,6 +23,7 @@ enum sha_algos {
 	ALGO_HEAVY,		/* Heavycoin hash */
 	ALGO_HMQ1725,
 	ALGO_HSR,
+	ALGO_BCD,
 	ALGO_KECCAK,
 	ALGO_KECCAKC,		/* refreshed Keccak with pool factor 256 */
 	ALGO_JACKPOT,
@@ -60,6 +61,7 @@ enum sha_algos {
 	ALGO_X14,
 	ALGO_X15,
 	ALGO_X16R,
+	ALGO_X16S,
 	ALGO_X17,
 	ALGO_VANILLA,
 	ALGO_VELTOR,
@@ -93,6 +95,7 @@ static const char *algo_names[] = {
 	"heavy",
 	"hmq1725",
 	"hsr",
+	"bcd",
 	"keccak",
 	"keccakc",
 	"jackpot",
@@ -130,6 +133,7 @@ static const char *algo_names[] = {
 	"x14",
 	"x15",
 	"x16r",
+	"x16s",
 	"x17",
 	"vanilla",
 	"veltor",
@@ -191,6 +195,8 @@ static inline int algo_to_int(char* arg)
 			i = ALGO_WHIRLPOOL;
 		else if (!strcasecmp("ziftr", arg))
 			i = ALGO_ZR5;
+		else if (!strcasecmp("x13bcd", arg))
+			i = ALGO_BCD;
 		else
 			i = -1;
 	}

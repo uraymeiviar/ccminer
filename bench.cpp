@@ -69,6 +69,7 @@ void algo_free_all(int thr_id)
 #endif
 	free_hmq17(thr_id);
 	free_hsr(thr_id);
+	free_bcd(thr_id);
 	free_jackpot(thr_id);
 	free_jha(thr_id);
 	free_lbry(thr_id);

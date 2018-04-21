@@ -1,5 +1,18 @@
 # ccminer
 
+based on suprminer 1.6 optimized x16r algo without any dev fee.
+
+Most optimizations come from alexis, so please tip him (addr below)
+
+original README as follows:
+
+
+alexis:
+  RVN donation address: RFg6gtkg6fFzsY64hWANTQC79yvNaQv8sL
+
+
+
+
 Based on Christian Buchner's &amp; Christian H.'s CUDA project, no more active on github since 2014.
 
 Check the [README.txt](README.txt) for the additions

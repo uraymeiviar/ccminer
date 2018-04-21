@@ -82,6 +82,8 @@ enum {
 };
 #endif
 
+#define NONCES_MAX	8
+
 typedef unsigned char uchar;
 
 #undef unlikely
@@ -744,6 +746,10 @@ struct work {
 	struct tx txs[POK_MAX_TXS];
 	// zec solution
 	uint8_t extra[1388];
+	char *txs2;
+	char *workid;
+
+	
 };
 
 #define POK_BOOL_MASK 0x00008000

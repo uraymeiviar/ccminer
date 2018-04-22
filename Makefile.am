@@ -162,6 +162,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x11/sib.cu \
 			  x11/veltor.cu \
 			  x11/cuda_streebog.cu \
+			  x12/x12.cu \
 			  x13/x13.cu \
 			  x13/cuda_x13_hamsi512.cu \
 			  x13/cuda_x13_hamsi512_alexis.cu \

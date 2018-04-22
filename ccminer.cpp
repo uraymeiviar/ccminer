@@ -302,6 +302,7 @@ Options:\n\
 			whirlpool   Whirlpool algo\n\
 			x11evo      Permuted x11 (Revolver)\n\
 			x11         X11 (DarkCoin)\n\
+			x12         X12 (GalaxyCash)\n\
 			x13         X13 (MaruCoin)\n\
 			x14         X14\n\
 			x15         X15\n\
@@ -700,7 +701,6 @@ static void calc_network_diff(struct work *work)
 		applog(LOG_DEBUG, "net diff: %f -> shift %u, bits %08x", d, shift, bits);
 
 	net_diff = d;
-
 }
 
 /* decode data from getwork (wallets and longpoll pools) */
@@ -1750,6 +1750,7 @@ static void workio_cmd_free(struct workio_cmd *wc)
 	memset(wc, 0, sizeof(*wc));	/* poison */
 	free(wc);
 }
+
 static void workio_abort()
 {
 	struct workio_cmd *wc;
@@ -1808,6 +1809,7 @@ static bool workio_get_work(struct workio_cmd *wc, CURL *curl)
 
 	return true;
 }
+
 static bool workio_submit_work(struct workio_cmd *wc, CURL *curl)
 {
 	int failures = 0;
@@ -1890,7 +1892,6 @@ static void *workio_thread(void *userdata)
 	tq_freeze(mythr->q);
 	return NULL;
 }
-
 
 bool get_work(struct thr_info *thr, struct work *work)
 {
@@ -2712,6 +2713,7 @@ static void *miner_thread(void *userdata)
 			case ALGO_BITCORE:
 			case ALGO_X11EVO:
 			case ALGO_X11:
+			case ALGO_X12:
 			case ALGO_X13:
 			case ALGO_WHIRLCOIN:
 			case ALGO_WHIRLPOOL:
@@ -2965,6 +2967,9 @@ static void *miner_thread(void *userdata)
 			break;
 		case ALGO_X11:
 			rc = scanhash_x11(thr_id, &work, max_nonce, &hashes_done);
+			break;
+		case ALGO_X12:
+			rc = scanhash_x12(thr_id, &work, max_nonce, &hashes_done);
 			break;
 		case ALGO_X13:
 			rc = scanhash_x13(thr_id, &work, max_nonce, &hashes_done);

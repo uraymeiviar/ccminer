@@ -2314,7 +2314,10 @@ void print_hash_tests(void)
 	printpfx("x11evo", hash);
 
 	x11hash(&hash[0], &buf[0]);
-	printpfx("X11", hash);
+	printpfx("x11", hash);
+
+	x12hash(&hash[0], &buf[0]);
+	printpfx("x12", hash);
 
 	x13hash(&hash[0], &buf[0]);
 	printpfx("X13", hash);

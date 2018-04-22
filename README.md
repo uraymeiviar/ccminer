@@ -39,6 +39,7 @@ Supported Algorithm
     dmd-gr      Diamond-Groestl
     fresh       Freshcoin (shavite 80)
     fugue256    Fuguecoin
+    graft       Cryptonight v8\n\
     groestl     Groestlcoin\n"
     heavy       Heavycoin\n"
     hmq1725     Doubloons / Espers
@@ -52,6 +53,7 @@ Supported Algorithm
     lyra2v2     VertCoin
     lyra2z      ZeroCoin (3rd impl)
     myr-gr      Myriad-Groestl
+    monero      XMR cryptonight (v7)\n\
     neoscrypt   FeatherCoin, Phoenix, UFO...
     nist5       NIST5 (TalkCoin)
     penta       Pentablake hash (5x Blake 512)
@@ -68,6 +70,7 @@ Supported Algorithm
     skein       Skein SHA2 (Skeincoin)
     skein2      Double Skein (Woodcoin)
     skunk       Skein Cube Fugue Streebog
+    stellite    Cryptonight v3\n\
     s3          S3 (1Coin)
     timetravel  Machinecoin permuted x8
     tribus      Denarius
@@ -77,6 +80,7 @@ Supported Algorithm
     whirlpool   Whirlpool algo
     x11evo      Permuted x11 (Revolver)
     x11         X11 (DarkCoin)
+    x12         X12 (GalaxyCash)\n\
     x13         X13 (MaruCoin)
     x14         X14
     x15         X15

@@ -57,6 +57,7 @@ enum sha_algos {
 	ALGO_BITCORE,
 	ALGO_X11EVO,
 	ALGO_X11,
+	ALGO_X12,
 	ALGO_X13,
 	ALGO_X14,
 	ALGO_X15,
@@ -132,6 +133,7 @@ static const char *algo_names[] = {
 	"bitcore",
 	"x11evo",
 	"x11",
+	"x12",
 	"x13",
 	"x14",
 	"x15",
@@ -203,6 +205,8 @@ static inline int algo_to_int(char* arg)
 			i = ALGO_ZR5;
 		else if (!strcasecmp("x13bcd", arg))
 			i = ALGO_BCD;
+		else if (!strcasecmp("xmrv7", arg))
+			i = ALGO_MONERO;
 		else
 			i = -1;
 	}
@@ -234,4 +238,5 @@ static inline int get_cryptonight_algo(int fork)
 
 	return algo;
 }
+
 #endif

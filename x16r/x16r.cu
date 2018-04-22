@@ -512,7 +512,7 @@ extern "C" int scanhash_x16r(int thr_id, struct work* work, uint32_t max_nonce, 
 				TRACE("fugue  :");
 				break;
 			case SHABAL:
-                		x14_shabal512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]); order++;
+                x14_shabal512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]); order++;
 				TRACE("shabal :");
 				break;
 			case WHIRLPOOL:

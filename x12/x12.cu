@@ -18,7 +18,7 @@ extern "C" {
 #include "miner.h"
 
 #include "cuda_helper.h"
-#include "x11/cuda_x11.h"
+#include "x16r/cuda_x16r.h"
 
 static uint32_t *d_hash[MAX_GPUS];
 
@@ -125,16 +125,11 @@ extern "C" int scanhash_x12(int thr_id, struct work* work, uint32_t max_nonce, u
 		gpulog(LOG_INFO, thr_id, "Intensity set to %g, %u cuda threads", throughput2intensity(throughput), throughput);
 
 		cuda_get_arch(thr_id);
-		use_compat_kernels[thr_id] = (cuda_arch[dev_id] < 500);
-		if (use_compat_kernels[thr_id])
-			x11_echo512_cpu_init(thr_id, throughput);
-
+		x16_echo512_cuda_init(thr_id, throughput);
 		quark_blake512_cpu_init(thr_id, throughput);
 		x11_luffaCubehash512_cpu_init(thr_id, throughput);
 		x11_shavite512_cpu_init(thr_id, throughput);
-		if (x11_simd512_cpu_init(thr_id, throughput) != 0) {
-			return 0;
-		}
+		x11_simd512_cpu_init(thr_id, throughput);
 		quark_groestl512_cpu_init(thr_id, throughput);
 		quark_skein512_cpu_init(thr_id, throughput);
 		quark_bmw512_cpu_init(thr_id, throughput);
@@ -162,18 +157,14 @@ extern "C" int scanhash_x12(int thr_id, struct work* work, uint32_t max_nonce, u
 		quark_blake512_cpu_hash_80(thr_id, throughput, pdata[19], d_hash[thr_id]); order++;
 		quark_bmw512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		x11_luffaCubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id], order++);
-		x11_shavite512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+		x11_shavite512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]); order++;
 		x11_simd512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		if (use_compat_kernels[thr_id])
-			x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		else {
-			x16_echo512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
-		}
+		x11_echo512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]); order++;
 		quark_groestl512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		quark_skein512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		quark_jh512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		quark_keccak512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+		quark_keccak512_cpu_hash_64(thr_id, throughput, NULL, d_hash[thr_id]); order++;
+		x13_hamsi512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]); order++;
 
 		*hashes_done = pdata[19] - first_nonce + throughput;
 

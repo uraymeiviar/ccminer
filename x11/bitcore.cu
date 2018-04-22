@@ -359,7 +359,7 @@ extern "C" int scanhash_bitcore(int thr_id, struct work* work, uint32_t max_nonc
 				TRACE("cube   :");
 				break;
 			case SHAVITE:
-				x11_shavite512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], i);
+				x11_shavite512_cpu_hash_64_alexis(thr_id, throughput, d_hash[thr_id]);
 				TRACE("shavite:");
 				break;
 			case SIMD:

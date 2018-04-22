@@ -2182,7 +2182,7 @@ void print_hash_tests(void)
 	cryptolight_hash(&hash[0], &buf[0], 76);
 	printpfx("cryptolight", hash);
 
-	cryptonight_hash(&hash[0], &buf[0], 76);
+	cryptonight_hash(&hash[0], &buf[0], 76, 0);
 	printpfx("cryptonight", hash);
 
 	memset(buf, 0, 180);
@@ -2211,7 +2211,7 @@ void print_hash_tests(void)
 	printpfx("hsr", hash);
 
 	bcd_hash(&hash[0], &buf[0]);
-    printpfx("bcd", hash);
+	printpfx("bcd", hash);
 
 	jha_hash(&hash[0], &buf[0]);
 	printpfx("jha", hash);

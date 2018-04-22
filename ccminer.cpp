@@ -237,6 +237,7 @@ char *opt_api_mcast_des = strdup("");
 int opt_api_mcast_port = 4068;
 
 bool opt_stratum_stats = false;
+int cryptonight_fork = 1;
 
 static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
@@ -250,7 +251,7 @@ Options:\n\
 			blakecoin   Fast Blake 256 (8 rounds)\n\
 			bmw         BMW 256\n\
 			cryptolight AEON cryptonight (MEM/2)\n\
-			cryptonight XMR cryptonight\n\
+			cryptonight XMR cryptonight (V1)\n\
 			c11/flax    X11 variant\n\
 			decred      Decred Blake256\n\
 			deep        Deepcoin\n\
@@ -258,6 +259,7 @@ Options:\n\
 			dmd-gr      Diamond-Groestl\n\
 			fresh       Freshcoin (shavite 80)\n\
 			fugue256    Fuguecoin\n\
+			graft       Cryptonight v8\n\
 			groestl     Groestlcoin\n"
 #ifdef WITH_HEAVY_ALGO
 "			heavy       Heavycoin\n"
@@ -273,6 +275,7 @@ Options:\n\
 			lyra2v2     VertCoin\n\
 			lyra2z      ZeroCoin (3rd impl)\n\
 			myr-gr      Myriad-Groestl\n\
+			monero      XMR cryptonight (v7)\n\
 			neoscrypt   FeatherCoin, Phoenix, UFO...\n\
 			nist5       NIST5 (TalkCoin)\n\
 			penta       Pentablake hash (5x Blake 512)\n\
@@ -289,6 +292,7 @@ Options:\n\
 			skein       Skein SHA2 (Skeincoin)\n\
 			skein2      Double Skein (Woodcoin)\n\
 			skunk       Skein Cube Fugue Streebog\n\
+			stellite    Cryptonight v3\n\
 			s3          S3 (1Coin)\n\
 			timetravel  Machinecoin permuted x8\n\
 			tribus      Denarius\n\
@@ -581,7 +585,10 @@ static bool get_blocktemplate(CURL *curl, struct work *work);
 
 void get_currentalgo(char* buf, int sz)
 {
-	snprintf(buf, sz, "%s", algo_names[opt_algo]);
+	int algo = opt_algo;
+	if (algo == ALGO_CRYPTONIGHT)
+		algo = get_cryptonight_algo(cryptonight_fork);
+	snprintf(buf, sz, "%s", algo_names[algo]);
 }
 
 void format_hashrate(double hashrate, char *output)
@@ -686,8 +693,8 @@ static void calc_network_diff(struct work *work)
 	uint64_t diffone = 0x0000FFFF00000000ull;
 	double d = (double)0x0000ffff / (double)bits;
 
-	for (int m = shift; m < 29; m++) d *= 256.0;
-	for (int m = 29; m < shift; m++) d /= 256.0;
+	for (int m=shift; m < 29; m++) d *= 256.0;
+	for (int m=29; m < shift; m++) d /= 256.0;
 	if (opt_algo == ALGO_DECRED && shift == 28) d *= 256.0;
 	if (opt_debug_diff)
 		applog(LOG_DEBUG, "net diff: %f -> shift %u, bits %08x", d, shift, bits);
@@ -706,7 +713,7 @@ static bool work_decode(const json_t *val, struct work *work)
 	switch (opt_algo) {
 	case ALGO_DECRED:
 		data_size = 192;
-		adata_sz = 180 / 4;
+		adata_sz = 180/4;
 		break;
 	case ALGO_NEOSCRYPT:
 	case ALGO_ZR5:
@@ -1534,11 +1541,22 @@ out:
 #endif
 
 #define GBT_CAPABILITIES "[\"coinbasetxn\", \"coinbasevalue\", \"longpoll\", \"workid\"]"
-static const char *gbt_req_ =
-"{\"method\": \"getblocktemplate\", \"params\": [{"
-//	"\"capabilities\": " GBT_CAPABILITIES ""
-"}], \"id\":9}\r\n";
 
+#ifdef ORG
+static const char *rpc_req =
+	"{\"method\": \"getwork\", \"params\": [], \"id\":0}\r\n";
+#else
+static const char *getwork_req =
+"{\"method\": \"getwork\", \"params\": [], \"id\":0}\r\n";
+
+static const char *gbt_req =
+	"{\"method\": \"getblocktemplate\", \"params\": [{"
+	//	"\"capabilities\": " GBT_CAPABILITIES ""
+	"}], \"id\":9}\r\n";
+#endif
+static const char *gbt_lp_req =
+"{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "
+GBT_CAPABILITIES ", \"longpollid\": \"%s\"}], \"id\":0}\r\n";
 static bool get_blocktemplate(CURL *curl, struct work *work)
 {
 	struct pool_infos *pool = &pools[work->pooln];
@@ -1546,7 +1564,7 @@ static bool get_blocktemplate(CURL *curl, struct work *work)
 		return false;
 
 	int curl_err = 0;
-	json_t *val = json_rpc_call_pool(curl, pool, gbt_req_, false, false, &curl_err);
+	json_t *val = json_rpc_call_pool(curl, pool, gbt_req, false, false, &curl_err);
 
 	if (!val && curl_err == -1) {
 		// when getblocktemplate is not supported, disable it
@@ -1563,6 +1581,7 @@ static bool get_blocktemplate(CURL *curl, struct work *work)
 
 	return rc;
 }
+
 // good alternative for wallet mining, difficulty and net hashrate
 static const char *info_req =
 "{\"method\": \"getmininginfo\", \"params\": [], \"id\":8}\r\n";
@@ -1615,19 +1634,7 @@ static bool get_mininginfo(CURL *curl, struct work *work)
 	json_decref(val);
 	return true;
 }
-#ifdef ORG
-static const char *rpc_req =
-	"{\"method\": \"getwork\", \"params\": [], \"id\":0}\r\n";
-#else
-static const char *getwork_req =
-"{\"method\": \"getwork\", \"params\": [], \"id\":0}\r\n";
-static const char *gbt_req =
-"{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "
-GBT_CAPABILITIES "}], \"id\":0}\r\n";
-#endif
-static const char *gbt_lp_req =
-"{\"method\": \"getblocktemplate\", \"params\": [{\"capabilities\": "
-GBT_CAPABILITIES ", \"longpollid\": \"%s\"}], \"id\":0}\r\n";
+
 static const char *json_rpc_getwork =
 "{\"method\":\"getwork\",\"params\":[],\"id\":0}\r\n";
 
@@ -2800,8 +2807,13 @@ static void *miner_thread(void *userdata)
 			rc = scanhash_cryptolight(thr_id, &work, max_nonce, &hashes_done);
 			break;
 		case ALGO_CRYPTONIGHT:
-			rc = scanhash_cryptonight(thr_id, &work, max_nonce, &hashes_done);
+		{
+			int cn_variant = 0;
+			if (cryptonight_fork > 1 && ((unsigned char*)work.data)[0] >= cryptonight_fork)
+				cn_variant = ((unsigned char*)work.data)[0] - cryptonight_fork + 1;
+			rc = scanhash_cryptonight(thr_id, &work, max_nonce, &hashes_done, cn_variant);
 			break;
+		}
 		case ALGO_DECRED:
 			rc = scanhash_decred(thr_id, &work, max_nonce, &hashes_done);
 			break;
@@ -3668,6 +3680,26 @@ void parse_arg(int key, char *arg)
 			case ALGO_SCRYPT_JANE: opt_nfactor = 14; break;
 			}
 		}
+
+		// cryptonight variants
+		switch (opt_algo) {
+		case ALGO_MONERO:
+			opt_algo = ALGO_CRYPTONIGHT;
+			cryptonight_fork = 7;
+			break;
+		case ALGO_GRAFT:
+			opt_algo = ALGO_CRYPTONIGHT;
+			cryptonight_fork = 8;
+			break;
+		case ALGO_STELLITE:
+			opt_algo = ALGO_CRYPTONIGHT;
+			cryptonight_fork = 3;
+			break;
+		case ALGO_CRYPTONIGHT:
+			cryptonight_fork = 1;
+			break;
+		}
+
 		break;
 	case 'b':
 		p = strstr(arg, ":");
@@ -3724,6 +3756,7 @@ void parse_arg(int key, char *arg)
 		if (v < 1 || v > 65535) // sanity check
 			show_usage_and_exit(1);
 		opt_api_mcast_port = v;
+		break;
 	case 'B':
 		opt_background = true;
 		break;
@@ -4451,7 +4484,7 @@ int main(int argc, char *argv[])
 	// get opt_quiet early
 	parse_single_opt('q', argc, argv);
 
-	printf("*** urayminer " PACKAGE_VERSION " for nVidia GPUs by uraymeiviar@github ***\n");
+	printf("*** ccminer " PACKAGE_VERSION " for nVidia GPUs by uraymeiviar@github ***\n");
 	printf("*** optimized ccminer based on versions by tpruvot@github ***\n");
 
 	if (!opt_quiet) {

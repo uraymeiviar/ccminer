@@ -59,7 +59,7 @@
     extern void x11_simd512_cpu_free(int thr_id);
 
     extern void x15_whirlpool_cpu_init(int thr_id, uint32_t threads, int mode);
-    extern void x15_whirlpool_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void x15_whirlpool_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
     extern void x15_whirlpool_cpu_free(int thr_id);
 
     extern void x11_luffa512_cpu_init(int thr_id, uint32_t threads);
@@ -79,11 +79,11 @@
 
     extern void x11_cubehash512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
 
-    extern void x17_sha512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
+    extern void x17_sha512_cpu_hash_128(int thr_id, int threads, uint32_t *d_hash);
 
     extern void x17_haval256_cpu_init(int thr_id, uint32_t threads);
-    extern void x17_haval256_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash, const int outlen);
-    extern void xevan_haval512_cpu_hash_64_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target);
+    extern void x17_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
+    extern void x17_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target);
 
     extern void quark_bmw512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
 
@@ -337,9 +337,9 @@
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
-            x17_haval256_cpu_hash_64(thr_id, throughput, pdata[19], d_hash[thr_id], 256); order++;
+            x15_whirlpool_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            x17_sha512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            x17_haval512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
     
             quark_blake512_cpu_hash_128(thr_id, throughput,  d_hash[thr_id]); order++;
             quark_bmw512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
@@ -354,9 +354,9 @@
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
-            xevan_haval512_cpu_hash_64_final(thr_id, throughput, d_hash[thr_id],d_resNonce[thr_id],*(uint64_t*)&ptarget[6]);
+            x15_whirlpool_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            x17_sha512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            x17_haval512_cpu_hash_128_final(thr_id, throughput, d_hash[thr_id],d_resNonce[thr_id],*(uint64_t*)&ptarget[6]);
     
             cudaMemcpy(h_resNonce[thr_id], d_resNonce[thr_id], NBN*sizeof(uint32_t), cudaMemcpyDeviceToHost);
     

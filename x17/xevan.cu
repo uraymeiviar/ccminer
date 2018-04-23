@@ -40,6 +40,7 @@
     extern void quark_blake512_cpu_free(int thr_id);
     extern void quark_blake512_cpu_hash_80(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash);
     extern void quark_blake512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_outputHash);
+    extern void quark_blake512_cpu_setBlock_80(int thr_id, uint32_t *pdata);
 
     extern void quark_skein512_cpu_init(int thr_id, uint32_t threads);
     extern void quark_skein512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
@@ -78,13 +79,14 @@
 
     extern void x11_cubehash512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
 
-    extern void x17_sha512_cpu_init(int thr_id, uint32_t threads);
     extern void x17_sha512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
 
     extern void x17_haval256_cpu_init(int thr_id, uint32_t threads);
     extern void x17_haval256_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash, const int outlen);
     extern void xevan_haval512_cpu_hash_64_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target);
-    
+
+    extern void quark_bmw512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+
     // X17 CPU Hash (Validation)
     extern "C" void xevanhash(void *output, const void *input)
     {
@@ -299,7 +301,6 @@
             x13_hamsi512_cpu_init(thr_id, throughput);
             x13_fugue512_cpu_init(thr_id, throughput);
             x14_shabal512_cpu_init(thr_id, throughput);
-            x17_sha512_cpu_init(thr_id, throughput);
             x17_haval256_cpu_init(thr_id, throughput);
     
             CUDA_SAFE_CALL(cudaMalloc(&d_hash[thr_id], 8 * sizeof(uint64_t) * throughput));
@@ -341,7 +342,7 @@
             x17_haval256_cpu_hash_64(thr_id, throughput, pdata[19], d_hash[thr_id], 256); order++;
     
             quark_blake512_cpu_hash_128(thr_id, throughput,  d_hash[thr_id]); order++;
-            quark_bmw512_cpu_hash_64(thr_id, throughput, NULL, d_hash[thr_id]); order++;
+            quark_bmw512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             xevan_groestl512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             quark_skein512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             quark_jh512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);

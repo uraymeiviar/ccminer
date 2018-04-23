@@ -1886,5 +1886,4 @@ void xevan_groestl512_cpu_hash_128(int thr_id, uint32_t threads,  uint32_t *d_ha
 	dim3 grid(factor*((threads + threadsperblock-1)/threadsperblock));
 	dim3 block(threadsperblock);
 	xevan_groestl512_gpu_hash_128_quad<<<grid, block>>>(threads, d_hash);
-	int dev_id = device_map[thr_id];
 }

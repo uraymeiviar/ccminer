@@ -728,8 +728,6 @@ static void finalization512(uint32_t *statebuffer, uint32_t *statechainv, uint32
 	rnd512(statebuffer, statechainv);
 	rnd512_nullhash(statechainv);
 
-	uint32_t *b=outHash;
-
 	*(uint2x4*)&outHash[ 0] = swapvec(*(uint2x4*)&statechainv[ 0] ^ *(uint2x4*)&statechainv[ 8] ^ *(uint2x4*)&statechainv[16] ^ *(uint2x4*)&statechainv[24] ^ *(uint2x4*)&statechainv[32]);
 	rnd512_nullhash(statechainv);
 	*(uint2x4*)&outHash[ 8] = swapvec(*(uint2x4*)&statechainv[ 0] ^ *(uint2x4*)&statechainv[ 8] ^ *(uint2x4*)&statechainv[16] ^ *(uint2x4*)&statechainv[24] ^ *(uint2x4*)&statechainv[32]);
@@ -760,7 +758,6 @@ void x11_luffa512_gpu_hash_128(uint32_t threads, uint32_t *g_hash)
 		uint32_t statebuffer[8];
 		uint32_t *const Hash = &g_hash[thread * 16U];
 
-		uint32_t luffa[16];
 		Update512(statebuffer, statechainv, Hash);
 		finalization512(statebuffer, statechainv, Hash);
 	}

@@ -87,6 +87,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  quark/cuda_skein512.cu \
 			  quark/cuda_bmw512.cu \
 			  quark/cuda_quark_keccak512.cu \
+			  quark/cuda_xevan_groestl512.cu \
 			  quark/nist5.cu \
 			  quark/quarkcoin.cu \
 			  quark/cuda_quark_compactionTest.cu \
@@ -189,6 +190,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x17/hmq17.cu \
 			  x17/cuda_x17_haval256.cu \
 			  x17/cuda_x17_sha512.cu \
+			  x17/xevan.cu \
 			  scrypt.cpp scrypt-jane.cpp \
     		  scrypt/blake.cu \
     		  scrypt/keccak.cu \
@@ -236,7 +238,7 @@ nvcc_ARCH += -gencode=arch=compute_50,code=\"sm_50,compute_50\"
 #nvcc_ARCH += -gencode=arch=compute_30,code=\"sm_30,compute_30\"
 
 nvcc_FLAGS = $(nvcc_ARCH) @CUDA_INCLUDES@ -I. @CUDA_CFLAGS@
-nvcc_FLAGS += $(JANSSON_INCLUDES) --ptxas-options="-v -O3 -warn-spills"
+nvcc_FLAGS += $(JANSSON_INCLUDES) --ptxas-options="-O3"
 
 # we're now targeting all major compute  within one binary.
 .cu.o:

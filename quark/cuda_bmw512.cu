@@ -4,6 +4,8 @@
 #define WANT_BMW512_80
 
 #include "cuda_helper.h"
+#include "cuda_vectors.h"
+#include "cuda_vector_uint2x4.h"
 
 __constant__ uint64_t c_PaddedMessage80[16]; // padded message (80 bytes + padding)
 
@@ -362,9 +364,9 @@ void quark_bmw512_gpu_hash_64(uint32_t threads, uint32_t startNounce, uint64_t *
 		for(int i=9;i<15;i++)
 			message[i] = make_uint2(0,0);
 
-		// Padding einfügen (Byteorder?!?)
+		// Padding einf\FCgen (Byteorder?!?)
 		message[8] = make_uint2(0x80,0);
-		// Länge (in Bits, d.h. 64 Byte * 8 = 512 Bits
+		// L\E4nge (in Bits, d.h. 64 Byte * 8 = 512 Bits
 		message[15] = make_uint2(512,0);
 
 		// Compression 1

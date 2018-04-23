@@ -309,6 +309,7 @@ Options:\n\
 			x16r        X16R (Raven)\n\
 			x16s	    X16S (Pidgeon)\n\
 			x17         X17\n\
+			xevan		Bitsend\n\
 			wildkeccak  Boolberry\n\
 			zr5         ZR5 (ZiftrCoin)\n\
   -d, --devices         Comma separated list of CUDA devices to use.\n\
@@ -2989,6 +2990,9 @@ static void *miner_thread(void *userdata)
 		case ALGO_X17:
 			rc = scanhash_x17(thr_id, &work, max_nonce, &hashes_done);
 			break;
+		case ALGO_XEVAN:
+			rc = scanhash_xevan(thr_id, &work, max_nonce, &hashes_done);
+			break;
 		case ALGO_ZR5:
 			rc = scanhash_zr5(thr_id, &work, max_nonce, &hashes_done);
 			break;
@@ -4503,6 +4507,7 @@ int main(int argc, char *argv[])
 		printf("  Originally based on Christian Buchner and Christian H. project\n");
 		printf("  Include some kernels from alexis78, djm34, djEzo, tsiv and krnlx.\n\n");
 		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n\n");
+		printf("                      1UrayjqRjSJjuouhJnkczy5AuMqJGRK4b (uraymeiviar)\n\n");
 	}
 
 	rpc_user = strdup("");

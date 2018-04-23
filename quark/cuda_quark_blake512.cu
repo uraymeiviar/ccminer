@@ -4,6 +4,8 @@
 
 #include "miner.h"
 #include "cuda_helper.h"
+#include "cuda_vectors.h"
+#include "cuda_vector_uint2x4.h"
 
 #define ROTR(x,n) ROTR64(x,n)
 
@@ -316,4 +318,92 @@ void quark_blake512_cpu_setBlock_80(int thr_id, uint32_t *endiandata)
 		cudaMemcpyToSymbol(c_PaddedMessage80, message, sizeof(message), 0, cudaMemcpyHostToDevice);
 	}
 	CUDA_LOG_ERROR();
+}
+
+//=====================================================================================
+
+#define TPB_128_B 128
+
+__global__ __launch_bounds__(TPB_128_B, 3)
+void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
+{
+	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+
+	if (thread < threads)
+	{
+		//uint64_t *inpHash = &g_hash[thread<<3]; // hashPosition * 8
+
+		// 128 Bytes
+		uint64_t buf[16];
+
+		// State
+		uint64_t h[8] = {
+			0x6a09e667f3bcc908ULL,
+			0xbb67ae8584caa73bULL,
+			0x3c6ef372fe94f82bULL,
+			0xa54ff53a5f1d36f1ULL,
+			0x510e527fade682d1ULL,
+			0x9b05688c2b3e6c1fULL,
+			0x1f83d9abfb41bd6bULL,
+			0x5be0cd19137e2179ULL
+		};
+
+		uint2x4 *phash = (uint2x4*)&g_hash[thread<<3];
+		uint2x4 *outpt = (uint2x4*)buf;
+		outpt[0] = __ldg4(&phash[0]);
+		outpt[1] = __ldg4(&phash[1]);
+
+		// Message for first round
+		#pragma unroll 8
+		for (int i=0; i < 8; ++i){
+			buf[i] = cuda_swab64(buf[i]);
+			//buf[i+8]=0;
+		}
+
+		// Hash Pad
+		buf[8]  = 0;
+		buf[9]  = 0;
+		buf[10] = 0;
+		buf[11] = 0;
+		buf[12] = 0;
+		buf[13] = 0;
+		buf[14] = 0;
+		buf[15] = 0;
+		// Ending round
+		quark_blake512_compress(h, buf, c_sigma_big, c_u512, 1024);
+
+		buf[0] = 0x8000000000000000;
+		buf[1] = 0;
+		buf[2] = 0;
+		buf[3] = 0;
+		buf[4] = 0;
+		buf[5] = 0;
+		buf[6] = 0;
+		buf[7] = 0;
+		buf[8] = 0;
+		buf[9] = 0;
+		buf[10] = 0;
+		buf[11] = 0;
+		buf[12] = 0;
+		buf[13] = 1;
+		buf[14] = 0;
+		buf[15] = 0x400;
+
+		quark_blake512_compress(h, buf, c_sigma_big, c_u512, 0);
+
+		uint64_t *outHash = &g_hash[thread * 8U];
+		#pragma unroll 8
+		for (int i=0; i < 8; i++) {
+			outHash[i] = cuda_swab64(h[i]);
+		}
+	}
+}
+
+__host__
+void quark_blake512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_outputHash)
+{
+		const uint32_t threadsperblock = TPB_128_B;
+		dim3 grid((threads + threadsperblock-1)/threadsperblock);
+		dim3 block(threadsperblock);
+		quark_blake512_gpu_hash_128<<<grid, block>>>(threads,  (uint64_t*)d_outputHash);
 }

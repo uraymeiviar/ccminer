@@ -4506,7 +4506,7 @@ int main(int argc, char *argv[])
 			CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, arch);
 		printf("  Originally based on Christian Buchner and Christian H. project\n");
 		printf("  Include some kernels from alexis78, djm34, djEzo, tsiv and krnlx.\n\n");
-		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n\n");
+		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n");
 		printf("                      1UrayjqRjSJjuouhJnkczy5AuMqJGRK4b (uraymeiviar)\n\n");
 	}
 

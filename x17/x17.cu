@@ -159,7 +159,6 @@ extern "C" int scanhash_x17(int thr_id, struct work* work, uint32_t max_nonce, u
 	const uint32_t first_nonce = pdata[19];
 
 	uint32_t throughput =  cuda_default_throughput(thr_id, 1U << 19); // 19=256*256*8;
-	//if (init[thr_id]) throughput = min(throughput, max_nonce - first_nonce);
 
 	if (opt_benchmark)
 		((uint32_t*)ptarget)[7] = 0x00ff;
@@ -178,7 +177,6 @@ extern "C" int scanhash_x17(int thr_id, struct work* work, uint32_t max_nonce, u
 		quark_groestl512_cpu_init(thr_id, throughput);
 		quark_skein512_cpu_init(thr_id, throughput);
 		quark_bmw512_cpu_init(thr_id, throughput);
-		//quark_keccak512_cpu_init(thr_id, throughput);
 		quark_jh512_cpu_init(thr_id, throughput);
 		x11_luffaCubehash512_cpu_init(thr_id, throughput);
 		x11_shavite512_cpu_init(thr_id, throughput);
@@ -215,7 +213,6 @@ extern "C" int scanhash_x17(int thr_id, struct work* work, uint32_t max_nonce, u
 		quark_groestl512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		quark_skein512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		quark_jh512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		//quark_keccak512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		quark_keccak512_cpu_hash_64(thr_id, throughput, NULL, d_hash[thr_id]); order++;
 		x11_luffaCubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id], order++);
 		x11_shavite512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);

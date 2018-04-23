@@ -401,6 +401,7 @@ extern void free_x15(int thr_id);
 extern void free_x16r(int thr_id);
 extern void free_x16s(int thr_id);
 extern void free_x17(int thr_id);
+extern void free_xevan(int thr_id);
 extern void free_zr5(int thr_id);
 //extern void free_sha256d(int thr_id);
 extern void free_scrypt(int thr_id);

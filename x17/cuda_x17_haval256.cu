@@ -625,10 +625,85 @@ void x17_haval256_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce
 	H_UPDATE_STATE; \
 } while (0)
 
+#define TPB 512
+
+__global__ __launch_bounds__(TPB, 2)
+void x17_haval512_gpu_hash_128(const uint32_t threads,const uint64_t*  g_hash)
+{
+	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+
+	if (thread < threads)
+	{
+        uint32_t *pHash = (uint32_t *)&g_hash[thread<<3];
+// haval
+		sph_u32 s0 = SPH_C32(0x243F6A88);
+		sph_u32 s1 = SPH_C32(0x85A308D3);
+		sph_u32 s2 = SPH_C32(0x13198A2E);
+		sph_u32 s3 = SPH_C32(0x03707344);
+		sph_u32 s4 = SPH_C32(0xA4093822);
+		sph_u32 s5 = SPH_C32(0x299F31D0);
+		sph_u32 s6 = SPH_C32(0x082EFA98);
+		sph_u32 s7 = SPH_C32(0xEC4E6C89);
+
+		sph_u32 X_var[32];
+
+		uint2x4* phash = (uint2x4*)pHash;
+		uint2x4* outpt = (uint2x4*)X_var;
+		outpt[0] = __ldg4(&phash[0]);
+		outpt[1] = __ldg4(&phash[1]);
+
+		#pragma unroll 16
+		for (int i = 16; i < 32; i++){
+			X_var[i] = 0;
+		}
+
+  		CORE5(X_var);
+
+  		X_var[0] = 0x00000001U;
+
+		#pragma unroll 28
+		for (int i = 1; i < 29; i++){
+			X_var[i] = 0;
+		}
+
+		X_var[29] = 0x40290000U;
+		X_var[30] = 0x00000400U;
+		X_var[31] = 0x00000000U;
+
+		CORE5(X_var);
+
+		pHash[0] = s0;
+		pHash[1] = s1;
+		pHash[2] = s2;
+		pHash[3] = s3;
+		pHash[4] = s4;
+		pHash[5] = s5;
+		pHash[6] = s6;
+		pHash[7] = s7;
+
+		pHash[8] = 0;
+		pHash[9] = 0;
+		pHash[10] = 0;
+		pHash[11] = 0;
+		pHash[12] = 0;
+		pHash[13] = 0;
+		pHash[14] = 0;
+		pHash[15] = 0;
+	}
+}
+
+__host__
+void x17_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash)
+{
+	dim3 grid((threads + TPB-1)/TPB);
+	dim3 block(TPB);
+	x17_haval512_gpu_hash_128 <<<grid, block>>> (threads, (uint64_t*)d_hash);
+}
+
 #define TPB_F 512
 
 __global__ __launch_bounds__(TPB_F, 4)
-void xevan_haval512_gpu_hash_64_final(const uint32_t threads,const uint64_t* __restrict__ g_hash,uint32_t* resNonce,const uint64_t target)
+void x17_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __restrict__ g_hash,uint32_t* resNonce,const uint64_t target)
 {
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 
@@ -657,9 +732,7 @@ void xevan_haval512_gpu_hash_64_final(const uint32_t threads,const uint64_t* __r
 			X_var[i] = 0;
 		}
 
-		//#define A(x) X_var[x]
 		CORE5(X_var);
-		//#undef A
 
 		X_var[0] = 0x00000001U;
 
@@ -671,9 +744,8 @@ void xevan_haval512_gpu_hash_64_final(const uint32_t threads,const uint64_t* __r
 		X_var[30] = 0x00000400U;
 		X_var[31] = 0x00000000U;
 
-		//#define A(x) X_var[x]
 		CORE5_F(X_var);
-		//#undef A
+
 		X_var[0] = s6;
 		X_var[1] = s7;
 
@@ -687,10 +759,10 @@ void xevan_haval512_gpu_hash_64_final(const uint32_t threads,const uint64_t* __r
 }
 
 __host__
-void xevan_haval512_cpu_hash_64_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target)
+void x17_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target)
 {
-        dim3 grid((threads + TPB_F-1)/TPB_F);
-        dim3 block(TPB_F);
+	dim3 grid((threads + TPB_F-1)/TPB_F);
+	dim3 block(TPB_F);
 
-        xevan_haval512_gpu_hash_64_final <<<grid, block>>> (threads, (uint64_t*)d_hash,resNonce,target);
+	x17_haval512_gpu_hash_128_final <<<grid, block>>> (threads, (uint64_t*)d_hash,resNonce,target);
 }

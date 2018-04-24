@@ -63,8 +63,7 @@
     extern void x15_whirlpool_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
     extern void x15_whirlpool_cpu_free(int thr_id);
 
-    extern void x11_luffa512_cpu_init(int thr_id, uint32_t threads);
-    extern void x11_luffa512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void x11_luffa512_cpu_hash_128(int thr_id, uint32_t threads,uint32_t *d_hash);
 
     extern void x11_echo512_cpu_init(int thr_id, uint32_t threads);
     extern void x11_echo512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
@@ -137,15 +136,15 @@
         sph_keccak512_init(&ctx_keccak);
         sph_keccak512(&ctx_keccak, hash, dataLen);
         sph_keccak512_close(&ctx_keccak, hash);
-    /*
+
         sph_luffa512_init(&ctx_luffa);
         sph_luffa512(&ctx_luffa, hash, dataLen);
         sph_luffa512_close(&ctx_luffa, hash);
-    
+
         sph_cubehash512_init(&ctx_cubehash);
         sph_cubehash512(&ctx_cubehash, hash, dataLen);
         sph_cubehash512_close(&ctx_cubehash, hash);
-    
+        /*
         sph_shavite512_init(&ctx_shavite);
         sph_shavite512(&ctx_shavite, hash, dataLen);
         sph_shavite512_close(&ctx_shavite, hash);
@@ -207,15 +206,15 @@
         sph_keccak512_init(&ctx_keccak);
         sph_keccak512(&ctx_keccak, hash, dataLen);
         sph_keccak512_close(&ctx_keccak, hash);
-    /*
+
         sph_luffa512_init(&ctx_luffa);
         sph_luffa512(&ctx_luffa, hash, dataLen);
         sph_luffa512_close(&ctx_luffa, hash);
-    
+
         sph_cubehash512_init(&ctx_cubehash);
         sph_cubehash512(&ctx_cubehash, hash, dataLen);
         sph_cubehash512_close(&ctx_cubehash, hash);
-    
+            /*
         sph_shavite512_init(&ctx_shavite);
         sph_shavite512(&ctx_shavite, hash, dataLen);
         sph_shavite512_close(&ctx_shavite, hash);
@@ -335,9 +334,9 @@
             quark_groestl512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             quark_skein512_cpu_hash_128(thr_id, throughput, NULL, d_hash[thr_id]); order++;
             quark_jh512_cpu_hash_128_keccak_128(thr_id, throughput, NULL, d_hash[thr_id]); order++;
-            /*
-            x11_luffa512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+            x11_luffa512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
+            /*
             x11_shavite512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_simd512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
@@ -354,9 +353,9 @@
             quark_groestl512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             quark_skein512_cpu_hash_128(thr_id, throughput, NULL, d_hash[thr_id]); order++;
             quark_jh512_cpu_hash_128_keccak_128(thr_id, throughput,  NULL, d_hash[thr_id]); order++;
-            /*
-            x11_luffa512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+            x11_luffa512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
+            /*
             x11_shavite512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_simd512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);

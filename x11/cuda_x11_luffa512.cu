@@ -108,28 +108,21 @@ const uint32_t h_IV[40] = {
     0x6c68e9be,0x5ec41e22,0xc825b7c7,0xaffb4363,
     0xf5df3999,0x0fc688f1,0xb07224cc,0x03e86cea};
 
-__device__ __constant__ uint32_t c_CNS[80];
-const uint32_t h_CNS[80] = {
-    0x303994a6,0xe0337818,0xc0e65299,0x441ba90d,
-    0x6cc33a12,0x7f34d442,0xdc56983e,0x9389217f,
-    0x1e00108f,0xe5a8bce6,0x7800423d,0x5274baf4,
-    0x8f5b7882,0x26889ba7,0x96e1db12,0x9a226e9d,
-    0xb6de10ed,0x01685f3d,0x70f47aae,0x05a17cf4,
-    0x0707a3d4,0xbd09caca,0x1c1e8f51,0xf4272b28,
-    0x707a3d45,0x144ae5cc,0xaeb28562,0xfaa7ae2b,
-    0xbaca1589,0x2e48f1c1,0x40a46f3e,0xb923c704,
-    0xfc20d9d2,0xe25e72c1,0x34552e25,0xe623bb72,
-    0x7ad8818f,0x5c58a4a4,0x8438764a,0x1e38e2e7,
-    0xbb6de032,0x78e38b9d,0xedb780c8,0x27586719,
-    0xd9847356,0x36eda57f,0xa2c78434,0x703aace7,
-    0xb213afa5,0xe028c9bf,0xc84ebe95,0x44756f91,
-    0x4e608a22,0x7e8fce32,0x56d858fe,0x956548be,
-    0x343b138f,0xfe191be2,0xd0ec4e3d,0x3cb226e5,
-    0x2ceb4882,0x5944a28e,0xb3ad2208,0xa1c4c355,
-    0xf0d2e9e3,0x5090d577,0xac11d7fa,0x2d1925ab,
-    0x1bcb66f2,0xb46496ac,0x6f2d9bc9,0xd1925ab0,
-    0x78602649,0x29131ab6,0x8edae952,0x0fc053c3,
-    0x3b6ba548,0x3f014f0c,0xedae9520,0xfc053c31};
+__constant__ const uint32_t c_CNS[80] = {
+		0x303994a6,0xe0337818,0xc0e65299,0x441ba90d, 0x6cc33a12,0x7f34d442,0xdc56983e,0x9389217f, 0x1e00108f,0xe5a8bce6,0x7800423d,0x5274baf4, 0x8f5b7882,0x26889ba7,0x96e1db12,0x9a226e9d,
+		0xb6de10ed,0x01685f3d,0x70f47aae,0x05a17cf4, 0x0707a3d4,0xbd09caca,0x1c1e8f51,0xf4272b28, 0x707a3d45,0x144ae5cc,0xaeb28562,0xfaa7ae2b, 0xbaca1589,0x2e48f1c1,0x40a46f3e,0xb923c704,
+		0xfc20d9d2,0xe25e72c1,0x34552e25,0xe623bb72, 0x7ad8818f,0x5c58a4a4,0x8438764a,0x1e38e2e7, 0xbb6de032,0x78e38b9d,0xedb780c8,0x27586719, 0xd9847356,0x36eda57f,0xa2c78434,0x703aace7,
+		0xb213afa5,0xe028c9bf,0xc84ebe95,0x44756f91, 0x4e608a22,0x7e8fce32,0x56d858fe,0x956548be, 0x343b138f,0xfe191be2,0xd0ec4e3d,0x3cb226e5, 0x2ceb4882,0x5944a28e,0xb3ad2208,0xa1c4c355,
+		0xf0d2e9e3,0x5090d577,0xac11d7fa,0x2d1925ab, 0x1bcb66f2,0xb46496ac,0x6f2d9bc9,0xd1925ab0, 0x78602649,0x29131ab6,0x8edae952,0x0fc053c3, 0x3b6ba548,0x3f014f0c,0xedae9520,0xfc053c31
+	};
+
+static uint32_t h_CNS[80] = {
+		0x303994a6,0xe0337818,0xc0e65299,0x441ba90d, 0x6cc33a12,0x7f34d442,0xdc56983e,0x9389217f, 0x1e00108f,0xe5a8bce6,0x7800423d,0x5274baf4, 0x8f5b7882,0x26889ba7,0x96e1db12,0x9a226e9d,
+		0xb6de10ed,0x01685f3d,0x70f47aae,0x05a17cf4, 0x0707a3d4,0xbd09caca,0x1c1e8f51,0xf4272b28, 0x707a3d45,0x144ae5cc,0xaeb28562,0xfaa7ae2b, 0xbaca1589,0x2e48f1c1,0x40a46f3e,0xb923c704,
+		0xfc20d9d2,0xe25e72c1,0x34552e25,0xe623bb72, 0x7ad8818f,0x5c58a4a4,0x8438764a,0x1e38e2e7, 0xbb6de032,0x78e38b9d,0xedb780c8,0x27586719, 0xd9847356,0x36eda57f,0xa2c78434,0x703aace7,
+		0xb213afa5,0xe028c9bf,0xc84ebe95,0x44756f91, 0x4e608a22,0x7e8fce32,0x56d858fe,0x956548be, 0x343b138f,0xfe191be2,0xd0ec4e3d,0x3cb226e5, 0x2ceb4882,0x5944a28e,0xb3ad2208,0xa1c4c355,
+		0xf0d2e9e3,0x5090d577,0xac11d7fa,0x2d1925ab, 0x1bcb66f2,0xb46496ac,0x6f2d9bc9,0xd1925ab0, 0x78602649,0x29131ab6,0x8edae952,0x0fc053c3, 0x3b6ba548,0x3f014f0c,0xedae9520,0xfc053c31
+	};
 
 
 /***************************************************/
@@ -531,29 +524,6 @@ void STEP1(uint32_t *t, const uint2 c){
 }
 
 __device__
-static void rnd512_first(uint32_t *const __restrict__ state, uint32_t *const __restrict__ buffer)
-{
-	#pragma unroll 5
-	for (int j = 0; j<5; j++) {
-		uint32_t tmp;
-		#pragma unroll 8
-		for(int i=0;i<8;i++)
-			state[i+(j<<3)] ^= buffer[i];
-		MULT0(buffer);
-	}
-	TWEAK(state[12], state[13], state[14], state[15], 1);
-	TWEAK(state[20], state[21], state[22], state[23], 2);
-	TWEAK(state[28], state[29], state[30], state[31], 3);
-	TWEAK(state[36], state[37], state[38], state[39], 4);
-	
-	for (int i = 0; i<8; i++) {
-		STEP2(&state[ 0],*(uint2*)&c_CNS[(2 * i) +  0],*(uint2*)&c_CNS[(2 * i) + 16]);
-		STEP2(&state[16],*(uint2*)&c_CNS[(2 * i) + 32],*(uint2*)&c_CNS[(2 * i) + 48]);
-		STEP1(&state[32],*(uint2*)&c_CNS[(2 * i) + 64]);
-	}
-}
-
-__device__
 static void rnd512(uint32_t *const __restrict__ statebuffer, uint32_t *const __restrict__ statechainv){
 	uint32_t t[40];
 	uint32_t tmp;
@@ -637,6 +607,29 @@ static void rnd512(uint32_t *const __restrict__ statebuffer, uint32_t *const __r
 		STEP2( statechainv    ,*(uint2*)&c_CNS[(2 * i) +  0], *(uint2*)&c_CNS[(2 * i) + 16]);
 		STEP2(&statechainv[16],*(uint2*)&c_CNS[(2 * i) + 32], *(uint2*)&c_CNS[(2 * i) + 48]);
 		STEP1(&statechainv[32],*(uint2*)&c_CNS[(2 * i) + 64]);
+	}
+}
+
+__device__
+static void rnd512_first(uint32_t *const __restrict__ state, uint32_t *const __restrict__ buffer)
+{
+	#pragma unroll 5
+	for (int j = 0; j<5; j++) {
+		uint32_t tmp;
+		#pragma unroll 8
+		for(int i=0;i<8;i++)
+			state[i+(j<<3)] ^= buffer[i];
+		MULT0(buffer);
+	}
+	TWEAK(state[12], state[13], state[14], state[15], 1);
+	TWEAK(state[20], state[21], state[22], state[23], 2);
+	TWEAK(state[28], state[29], state[30], state[31], 3);
+	TWEAK(state[36], state[37], state[38], state[39], 4);
+	
+	for (int i = 0; i<8; i++) {
+		STEP2(&state[ 0],*(uint2*)&c_CNS[(2 * i) +  0],*(uint2*)&c_CNS[(2 * i) + 16]);
+		STEP2(&state[16],*(uint2*)&c_CNS[(2 * i) + 32],*(uint2*)&c_CNS[(2 * i) + 48]);
+		STEP1(&state[32],*(uint2*)&c_CNS[(2 * i) + 64]);
 	}
 }
 

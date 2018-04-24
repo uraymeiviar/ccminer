@@ -138,7 +138,6 @@ void x11_cubehash512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash)
 
 __device__ __forceinline__
 static void rrounds(uint32_t *x){
-	#pragma unroll 2
 	for (int r = 0; r < 16; r++) {
 		/* "add x_0jklm into x_1jklmn modulo 2^32 rotate x_0jklm upwards by 7 bits" */
 		x[16] = x[16] + x[ 0]; x[ 0] = ROTL32(x[ 0], 7);x[17] = x[17] + x[ 1];x[ 1] = ROTL32(x[ 1], 7);
@@ -177,7 +176,7 @@ static void rrounds(uint32_t *x){
 
 /***************************************************/
 // GPU Hash Function
-__global__ __launch_bounds__(TPB)
+__global__ __launch_bounds__(TPB,2)
 void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
 
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
@@ -207,6 +206,8 @@ void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
 	//        Update32(x, (const BitSequence*)(Hash+8));
 		*(uint2x4*)&x[ 0] ^= __ldg4((uint2x4*)&Hash[8]);
 		
+		rrounds(x);
+		rrounds(x);
 		rrounds(x);
 
 		// Padding Block

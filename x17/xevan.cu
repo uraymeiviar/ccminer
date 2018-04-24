@@ -38,7 +38,7 @@
     extern void quark_blake512_cpu_init(int thr_id, uint32_t threads);
     extern void quark_blake512_cpu_free(int thr_id);
     extern void quark_blake512_cpu_hash_80_bmw_128(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash);
-    extern void quark_blake512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void quark_blake512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_outputHash);
     extern void xevan_blake512_cpu_setBlock_80(int thr_id, uint32_t *pdata);
 
     extern void quark_skein512_cpu_init(int thr_id, uint32_t threads);
@@ -87,7 +87,7 @@
     extern void x17_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
     extern void x17_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target);
 
-    extern void quark_bmw512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void quark_bmw512_cpu_hash_64x(int thr_id, uint32_t threads, uint32_t *d_nonceVector, uint32_t *d_hash);
 
     // X17 CPU Hash (Validation)
     extern "C" void xevanhash(void *output, const void *input)
@@ -184,15 +184,15 @@
         sph_haval256_5_close(&ctx_haval, hash);
     
         memset(&hash[8], 0, dataLen - 32);
-    /*
+
         sph_blake512_init(&ctx_blake);
         sph_blake512(&ctx_blake, hash, dataLen);
         sph_blake512_close(&ctx_blake, hash);
-    
+
         sph_bmw512_init(&ctx_bmw);
         sph_bmw512(&ctx_bmw, hash, dataLen);
         sph_bmw512_close(&ctx_bmw, hash);
-    
+  
         sph_groestl512_init(&ctx_groestl);
         sph_groestl512(&ctx_groestl, hash, dataLen);
         sph_groestl512_close(&ctx_groestl, hash);
@@ -200,7 +200,7 @@
         sph_skein512_init(&ctx_skein);
         sph_skein512(&ctx_skein, hash, dataLen);
         sph_skein512_close(&ctx_skein, hash);
-    
+    /*
         sph_jh512_init(&ctx_jh);
         sph_jh512(&ctx_jh, hash, dataLen);
         sph_jh512_close(&ctx_jh, hash);
@@ -350,11 +350,12 @@
             x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             */
             x17_haval512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
-    /*
-            quark_blake512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            quark_bmw512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            quark_groestl512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-            quark_skein512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+
+            quark_blake512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            quark_bmw512_cpu_hash_64x(thr_id, throughput, NULL, d_hash[thr_id]); order++;
+            quark_groestl512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            quark_skein512_cpu_hash_128(thr_id, throughput, NULL, d_hash[thr_id]); order++;
+            /*
             quark_jh512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             quark_keccak512_cpu_hash_64(thr_id, throughput, NULL, d_hash[thr_id]); order++;
             x11_luffa512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);

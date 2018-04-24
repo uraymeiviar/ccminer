@@ -61,11 +61,11 @@ static const uint64_t c_u512[16] =
 	v[a] += (m[idx1] ^ u512[idx2]) + v[b]; \
 	v[d] = SWAPDWORDS(v[d] ^ v[a]); \
 	v[c] += v[d]; \
-	v[b] = ROTR( v[b] ^ v[c], 25); \
+	v[b] = ROTR64( v[b] ^ v[c], 25); \
 	v[a] += (m[idx2] ^ u512[idx1]) + v[b]; \
-	v[d] = ROTR( v[d] ^ v[a], 16); \
+	v[d] = ROTR64( v[d] ^ v[a], 16); \
 	v[c] += v[d]; \
-	v[b] = ROTR( v[b] ^ v[c], 11); \
+	v[b] = ROTR64( v[b] ^ v[c], 11); \
 }
 
 __device__ __forceinline__
@@ -507,6 +507,64 @@ void xevan_blake512_cpu_setBlock_80(int thr_id, uint32_t *endiandata){
 
 #define TPB_128_B 128
 
+#define GS(a,b,c,d,x) { \
+	uint32_t idx1 = sigma[i][x]; \
+	uint32_t idx2 = sigma[i][x+1]; \
+	v[a] += (m[idx1] ^ u512[idx2]) + v[b]; \
+	v[d] = SWAPDWORDS(v[d] ^ v[a]); \
+	v[c] += v[d]; \
+	v[b] = ROTR( (v[b] ^ v[c]), 25); \
+	v[a] += (m[idx2] ^ u512[idx1]) + v[b]; \
+	v[d] = ROTR( v[d] ^ v[a], 16); \
+	v[c] += v[d]; \
+	v[b] = ROTR( v[b] ^ v[c], 11); \
+}
+
+__device__ __forceinline__
+void quark_blake512_compress_noswab(uint64_t *h, const uint64_t *block, const uint8_t ((*sigma)[16]), const uint64_t *u512, const int T0)
+{
+	uint64_t v[16];
+	const uint64_t *m=block;
+
+	//#pragma unroll 8
+	for(int i=0; i < 8; i++){
+		v[i] = h[i];
+	}
+
+	v[ 8] = u512[0];
+	v[ 9] = u512[1];
+	v[10] = u512[2];
+	v[11] = u512[3];
+	v[12] = u512[4] ^ T0;
+	v[13] = u512[5] ^ T0;
+	v[14] = u512[6];
+	v[15] = u512[7];
+
+	#pragma unroll 16
+	for(int i=0; i < 16; i++)
+	{
+		/* column step */
+		GS( 0, 4, 8, 12, 0 );
+		GS( 1, 5, 9, 13, 2 );
+		GS( 2, 6, 10, 14, 4 );
+		GS( 3, 7, 11, 15, 6 );
+		/* diagonal step */
+		GS( 0, 5, 10, 15, 8 );
+		GS( 1, 6, 11, 12, 10 );
+		GS( 2, 7, 8, 13, 12 );
+		GS( 3, 4, 9, 14, 14 );
+	}
+
+	h[0] ^= v[0] ^ v[8];
+	h[1] ^= v[1] ^ v[9];
+	h[2] ^= v[2] ^ v[10];
+	h[3] ^= v[3] ^ v[11];
+	h[4] ^= v[4] ^ v[12];
+	h[5] ^= v[5] ^ v[13];
+	h[6] ^= v[6] ^ v[14];
+	h[7] ^= v[7] ^ v[15];
+}
+
 __global__ __launch_bounds__(TPB_128_B, 3)
 void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
 {
@@ -514,8 +572,6 @@ void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
 
 	if (thread < threads)
 	{
-		//uint64_t *inpHash = &g_hash[thread<<3]; // hashPosition * 8
-
 		// 128 Bytes
 		uint64_t buf[16];
 
@@ -540,7 +596,6 @@ void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
 		#pragma unroll 8
 		for (int i=0; i < 8; ++i){
 			buf[i] = cuda_swab64(buf[i]);
-			//buf[i+8]=0;
 		}
 
 		// Hash Pad
@@ -553,7 +608,7 @@ void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
 		buf[14] = 0;
 		buf[15] = 0;
 		// Ending round
-		quark_blake512_compress(h, buf, c_sigma_big, c_u512, 1024);
+		quark_blake512_compress_noswab(h, buf, c_sigma_big, c_u512, 1024);
 
 		buf[0] = 0x8000000000000000;
 		buf[1] = 0;
@@ -572,7 +627,7 @@ void quark_blake512_gpu_hash_128(uint32_t threads,  uint64_t *g_hash)
 		buf[14] = 0;
 		buf[15] = 0x400;
 
-		quark_blake512_compress(h, buf, c_sigma_big, c_u512, 0);
+		quark_blake512_compress_noswab(h, buf, c_sigma_big, c_u512, 0);
 
 		uint64_t *outHash = &g_hash[thread * 8U];
 		#pragma unroll 8

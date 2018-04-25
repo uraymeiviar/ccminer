@@ -196,6 +196,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  xevan/xevan_echo512.cu \
 			  xevan/xevan_hamsi512.cu \
 			  xevan/xevan_fugue512.cu \
+			  xevan/xevan_shabal512.cu \
 			  scrypt.cpp scrypt-jane.cpp \
     		  scrypt/blake.cu \
     		  scrypt/keccak.cu \

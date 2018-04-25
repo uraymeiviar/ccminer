@@ -66,9 +66,7 @@
     extern void xevan_echo512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
 
     extern void xevan_fugue512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
-    
-    extern void x14_shabal512_cpu_init(int thr_id, uint32_t threads);
-    extern void x14_shabal512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void xevan_shabal512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
 
     extern void quark_groestl512_cpu_hash_128(int thr_id, uint32_t threads,  uint32_t *d_hash);
     extern void groestl512_cpu_init(int thr_id, uint32_t threads);
@@ -159,11 +157,11 @@
         sph_fugue512_init(&ctx_fugue);
         sph_fugue512(&ctx_fugue, hash, dataLen);
         sph_fugue512_close(&ctx_fugue, hash);
-    /*
+
         sph_shabal512_init(&ctx_shabal);
         sph_shabal512(&ctx_shabal, hash, dataLen);
         sph_shabal512_close(&ctx_shabal, hash);
-    
+        /*
         sph_whirlpool_init(&ctx_whirlpool);
         sph_whirlpool(&ctx_whirlpool, hash, dataLen);
         sph_whirlpool_close(&ctx_whirlpool, hash);
@@ -229,11 +227,11 @@
         sph_fugue512_init(&ctx_fugue);
         sph_fugue512(&ctx_fugue, hash, dataLen);
         sph_fugue512_close(&ctx_fugue, hash);
-    /*
+
         sph_shabal512_init(&ctx_shabal);
         sph_shabal512(&ctx_shabal, hash, dataLen);
         sph_shabal512_close(&ctx_shabal, hash);
-    
+        /*
         sph_whirlpool_init(&ctx_whirlpool);
         sph_whirlpool(&ctx_whirlpool, hash, dataLen);
         sph_whirlpool_close(&ctx_whirlpool, hash);
@@ -336,8 +334,8 @@
             xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_hamsi512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_fugue512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_shabal512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             /*
-            x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             */
@@ -355,8 +353,8 @@
             xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_hamsi512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_fugue512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_shabal512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
              /*
-            x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
                 */

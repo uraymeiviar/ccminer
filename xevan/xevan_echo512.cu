@@ -77,9 +77,8 @@ static void xevan_echo512_gpu_hash_128(uint32_t threads, uint32_t *g_hash)
 //__syncthreads();
 
 	const uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
-	uint32_t k0;
 	uint32_t h[16];
-	uint32_t hash[16];
+
 	if (thread < threads){
 
 		uint32_t *Hash = &g_hash[thread<<4];

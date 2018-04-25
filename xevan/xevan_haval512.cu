@@ -1,56 +1,21 @@
-/*
- * haval-256 kernel implementation.
- *
- * ==========================(LICENSE BEGIN)============================
- *
- * Copyright (c) 2014 djm34
- *               2016 tpruvot
- *
- * Permission is hereby granted, free of charge, to any person obtaining
- * a copy of this software and associated documentation files (the
- * "Software"), to deal in the Software without restriction, including
- * without limitation the rights to use, copy, modify, merge, publish,
- * distribute, sublicense, and/or sell copies of the Software, and to
- * permit persons to whom the Software is furnished to do so, subject to
- * the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
- * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
- * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
- * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * ===========================(LICENSE END)=============================
- */
-#include <stdio.h>
-#include <memory.h>
-
 #include "cuda_helper.h"
+#include "cuda_helper_alexis.h"
+#include "cuda_vectors_alexis.h"
 
 #define F1(x6, x5, x4, x3, x2, x1, x0) \
 	(((x1) & ((x0) ^ (x4))) ^ ((x2) & (x5)) ^ ((x3) & (x6)) ^ (x0))
 
 #define F2(x6, x5, x4, x3, x2, x1, x0) \
-	(((x2) & (((x1) & ~(x3)) ^ ((x4) & (x5)) ^ (x6) ^ (x0))) \
-	^ ((x4) & ((x1) ^ (x5))) ^ ((x3 & (x5)) ^ (x0)))
+	(((x2) & (((x1) & ~(x3)) ^ ((x4) & (x5)) ^ (x6) ^ (x0))) ^ ((x4) & ((x1) ^ (x5))) ^ ((x3 & (x5)) ^ (x0)))
 
 #define F3(x6, x5, x4, x3, x2, x1, x0) \
-	(((x3) & (((x1) & (x2)) ^ (x6) ^ (x0))) \
-	^ ((x1) & (x4)) ^ ((x2) & (x5)) ^ (x0))
+	(((x3) & (((x1) & (x2)) ^ (x6) ^ (x0))) ^ ((x1) & (x4)) ^ ((x2) & (x5)) ^ (x0))
 
 #define F4(x6, x5, x4, x3, x2, x1, x0) \
-	(((x3) & (((x1) & (x2)) ^ ((x4) | (x6)) ^ (x5))) \
-	^ ((x4) & ((~(x2) & (x5)) ^ (x1) ^ (x6) ^ (x0))) \
-	^ ((x2) & (x6)) ^ (x0))
+	(((x3) & (((x1) & (x2)) ^ ((x4) | (x6)) ^ (x5))) ^ ((x4) & ((~(x2) & (x5)) ^ (x1) ^ (x6) ^ (x0))) ^ ((x2) & (x6)) ^ (x0))
 
 #define F5(x6, x5, x4, x3, x2, x1, x0) \
-	(((x0) & ~(((x1) & (x2) & (x3)) ^ (x5))) \
-	^ ((x1) & (x4)) ^ ((x2) & (x5)) ^ ((x3) & (x6)))
+	(((x0) & ~(((x1) & (x2) & (x3)) ^ (x5))) ^ ((x1) & (x4)) ^ ((x2) & (x5)) ^ ((x3) & (x6)))
 
 #define FP5_1(x6, x5, x4, x3, x2, x1, x0) \
 	F1(x3, x4, x1, x0, x5, x2, x6)
@@ -61,8 +26,8 @@
 #define FP5_4(x6, x5, x4, x3, x2, x1, x0) \
 	F4(x1, x5, x3, x2, x0, x4, x6)
 #define FP5_5(x6, x5, x4, x3, x2, x1, x0) \
-	F5(x2, x5, x0, x6, x4, x3, x1)
-
+    F5(x2, x5, x0, x6, x4, x3, x1)
+    
 #define STEP(n, p, x7, x6, x5, x4, x3, x2, x1, x0, w, c) { \
 	uint32_t t = FP ## n ## _ ## p(x6, x5, x4, x3, x2, x1, x0); \
 	(x7) = (uint32_t)(ROTR32(t, 7) + ROTR32((x7), 11) + (w) + (c)); \
@@ -258,94 +223,222 @@
 	STEP(n, 5, s0, s7, s6, s5, s4, s3, s2, s1, in[15], 0x409F60C4); \
 }
 
-__global__ /* __launch_bounds__(256, 6) */
-void x17_haval256_gpu_hash_64(const uint32_t threads, uint64_t *g_hash, const int outlen)
+#define PASS5_final(n, in) { \
+	STEP(n, 5, s7, s6, s5, s4, s3, s2, s1, s0, in[27], 0xBA3BF050); \
+	STEP(n, 5, s6, s5, s4, s3, s2, s1, s0, s7, in[ 3], 0x7EFB2A98); \
+	STEP(n, 5, s5, s4, s3, s2, s1, s0, s7, s6, in[21], 0xA1F1651D); \
+	STEP(n, 5, s4, s3, s2, s1, s0, s7, s6, s5, in[26], 0x39AF0176); \
+	STEP(n, 5, s3, s2, s1, s0, s7, s6, s5, s4, in[17], 0x66CA593E); \
+	STEP(n, 5, s2, s1, s0, s7, s6, s5, s4, s3, in[11], 0x82430E88); \
+	STEP(n, 5, s1, s0, s7, s6, s5, s4, s3, s2, in[20], 0x8CEE8619); \
+	STEP(n, 5, s0, s7, s6, s5, s4, s3, s2, s1, in[29], 0x456F9FB4); \
+ \
+	STEP(n, 5, s7, s6, s5, s4, s3, s2, s1, s0, in[19], 0x7D84A5C3); \
+	STEP(n, 5, s6, s5, s4, s3, s2, s1, s0, s7, in[ 0], 0x3B8B5EBE); \
+	STEP(n, 5, s5, s4, s3, s2, s1, s0, s7, s6, in[12], 0xE06F75D8); \
+	STEP(n, 5, s4, s3, s2, s1, s0, s7, s6, s5, in[ 7], 0x85C12073); \
+	STEP(n, 5, s3, s2, s1, s0, s7, s6, s5, s4, in[13], 0x401A449F); \
+	STEP(n, 5, s2, s1, s0, s7, s6, s5, s4, s3, in[ 8], 0x56C16AA6); \
+	STEP(n, 5, s1, s0, s7, s6, s5, s4, s3, s2, in[31], 0x4ED3AA62); \
+	STEP(n, 5, s0, s7, s6, s5, s4, s3, s2, s1, in[10], 0x363F7706); \
+ \
+	STEP(n, 5, s7, s6, s5, s4, s3, s2, s1, s0, in[ 5], 0x1BFEDF72); \
+	STEP(n, 5, s6, s5, s4, s3, s2, s1, s0, s7, in[ 9], 0x429B023D); \
+	STEP(n, 5, s5, s4, s3, s2, s1, s0, s7, s6, in[14], 0x37D0D724); \
+	STEP(n, 5, s4, s3, s2, s1, s0, s7, s6, s5, in[30], 0xD00A1248); \
+	STEP(n, 5, s3, s2, s1, s0, s7, s6, s5, s4, in[18], 0xDB0FEAD3); \
+	STEP(n, 5, s2, s1, s0, s7, s6, s5, s4, s3, in[ 6], 0x49F1C09B); \
+	STEP(n, 5, s1, s0, s7, s6, s5, s4, s3, s2, in[28], 0x075372C9); \
+	STEP(n, 5, s0, s7, s6, s5, s4, s3, s2, s1, in[24], 0x80991B7B); \
+ \
+	STEP(n, 5, s7, s6, s5, s4, s3, s2, s1, s0, in[ 2], 0x25D479D8); \
+	STEP(n, 5, s6, s5, s4, s3, s2, s1, s0, s7, in[23], 0xF6E8DEF7); \
+}
+
+#define sph_u32 uint32_t
+
+#define H_SAVE_STATE \
+	sph_u32 u0, u1, u2, u3, u4, u5, u6, u7; \
+	do { \
+		u0 = s0; \
+		u1 = s1; \
+		u2 = s2; \
+		u3 = s3; \
+		u4 = s4; \
+		u5 = s5; \
+		u6 = s6; \
+		u7 = s7; \
+	} while (0)
+
+#define H_UPDATE_STATE   do { \
+		s0 = SPH_T32(s0 + u0); \
+		s1 = SPH_T32(s1 + u1); \
+		s2 = SPH_T32(s2 + u2); \
+		s3 = SPH_T32(s3 + u3); \
+		s4 = SPH_T32(s4 + u4); \
+		s5 = SPH_T32(s5 + u5); \
+		s6 = SPH_T32(s6 + u6); \
+		s7 = SPH_T32(s7 + u7); \
+	} while (0)
+
+#define CORE5(in)  do { \
+	H_SAVE_STATE; \
+	PASS1(5, in); \
+	PASS2(5, in); \
+	PASS3(5, in); \
+	PASS4(5, in); \
+	PASS5(5, in); \
+	H_UPDATE_STATE; \
+} while (0)
+
+#define CORE5_F(in)  do { \
+	H_SAVE_STATE; \
+	PASS1(5, in); \
+	PASS2(5, in); \
+	PASS3(5, in); \
+	PASS4(5, in); \
+	PASS5_final(5, in); \
+	H_UPDATE_STATE; \
+} while (0)
+
+#define TPB 512
+
+__global__ __launch_bounds__(TPB, 2)
+void xevan_haval512_gpu_hash_128(const uint32_t threads,const uint64_t*  g_hash)
 {
-	const uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+
 	if (thread < threads)
 	{
-		const uint64_t hashPosition = thread*8U;
-		uint64_t *pHash = &g_hash[hashPosition];
+        uint32_t *pHash = (uint32_t *)&g_hash[thread<<3];
+// haval
+		sph_u32 s0 = SPH_C32(0x243F6A88);
+		sph_u32 s1 = SPH_C32(0x85A308D3);
+		sph_u32 s2 = SPH_C32(0x13198A2E);
+		sph_u32 s3 = SPH_C32(0x03707344);
+		sph_u32 s4 = SPH_C32(0xA4093822);
+		sph_u32 s5 = SPH_C32(0x299F31D0);
+		sph_u32 s6 = SPH_C32(0x082EFA98);
+		sph_u32 s7 = SPH_C32(0xEC4E6C89);
 
-		uint32_t s0, s1, s2, s3, s4, s5, s6, s7;
-		const uint32_t u0 = s0 = 0x243F6A88;
-		const uint32_t u1 = s1 = 0x85A308D3;
-		const uint32_t u2 = s2 = 0x13198A2E;
-		const uint32_t u3 = s3 = 0x03707344;
-		const uint32_t u4 = s4 = 0xA4093822;
-		const uint32_t u5 = s5 = 0x299F31D0;
-		const uint32_t u6 = s6 = 0x082EFA98;
-		const uint32_t u7 = s7 = 0xEC4E6C89;
+		sph_u32 X_var[32];
 
-		union {
-			uint32_t h4[16];
-			uint64_t h8[8];
-		} hash;
+		uint2x4* phash = (uint2x4*)pHash;
+		uint2x4* outpt = (uint2x4*)X_var;
+		outpt[0] = __ldg4(&phash[0]);
+		outpt[1] = __ldg4(&phash[1]);
 
-		#pragma unroll
-		for (int i=0; i<8; i++) {
-			hash.h8[i] = pHash[i];
+		#pragma unroll 16
+		for (int i = 16; i < 32; i++){
+			X_var[i] = 0;
 		}
 
-		///////// input big /////////////////////
+  		CORE5(X_var);
 
-		uint32_t buf[32];
+  		X_var[0] = 0x00000001U;
 
-		#pragma unroll
-		for (int i=0; i<16; i++)
-			buf[i] = hash.h4[i];
+		#pragma unroll 28
+		for (int i = 1; i < 29; i++){
+			X_var[i] = 0;
+		}
 
-		buf[16] = 0x00000001;
+		X_var[29] = 0x40290000U;
+		X_var[30] = 0x00000400U;
+		X_var[31] = 0x00000000U;
 
-		#pragma unroll
-		for (int i=17; i<29; i++)
-			buf[i] = 0;
+		CORE5(X_var);
 
-		buf[29] = 0x40290000;
-		buf[30] = 0x00000200;
-		buf[31] = 0;
+		pHash[0] = s0;
+		pHash[1] = s1;
+		pHash[2] = s2;
+		pHash[3] = s3;
+		pHash[4] = s4;
+		pHash[5] = s5;
+		pHash[6] = s6;
+		pHash[7] = s7;
 
-		PASS1(5, buf);
-		PASS2(5, buf);
-		PASS3(5, buf);
-		PASS4(5, buf);
-		PASS5(5, buf);
+		pHash[8] = 0;
+		pHash[9] = 0;
+		pHash[10] = 0;
+		pHash[11] = 0;
+		pHash[12] = 0;
+		pHash[13] = 0;
+		pHash[14] = 0;
+		pHash[15] = 0;
+	}
+}
 
-		hash.h4[0] = s0 + u0;
-		hash.h4[1] = s1 + u1;
-		hash.h4[2] = s2 + u2;
-		hash.h4[3] = s3 + u3;
-		hash.h4[4] = s4 + u4;
-		hash.h4[5] = s5 + u5;
-		hash.h4[6] = s6 + u6;
-		hash.h4[7] = s7 + u7;
+__host__
+void xevan_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash)
+{
+	dim3 grid((threads + TPB-1)/TPB);
+	dim3 block(TPB);
+	xevan_haval512_gpu_hash_128 <<<grid, block>>> (threads, (uint64_t*)d_hash);
+}
 
-		pHash[0] = hash.h8[0];
-		pHash[1] = hash.h8[1];
-		pHash[2] = hash.h8[2];
-		pHash[3] = hash.h8[3];
+#define TPB_F 512
 
-		if (outlen == 512) {
-			pHash[4] = 0; //hash.h8[4];
-			pHash[5] = 0; //hash.h8[5];
-			pHash[6] = 0; //hash.h8[6];
-			pHash[7] = 0; //hash.h8[7];
+__global__ __launch_bounds__(TPB_F, 4)
+void xevan_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __restrict__ g_hash,uint32_t* resNonce,const uint64_t target)
+{
+	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+
+	if (thread < threads)
+	{
+		uint32_t *pHash = (uint32_t *)&g_hash[thread<<3];
+		// haval
+		sph_u32 s0 = SPH_C32(0x243F6A88);
+		sph_u32 s1 = SPH_C32(0x85A308D3);
+		sph_u32 s2 = SPH_C32(0x13198A2E);
+		sph_u32 s3 = SPH_C32(0x03707344);
+		sph_u32 s4 = SPH_C32(0xA4093822);
+		sph_u32 s5 = SPH_C32(0x299F31D0);
+		sph_u32 s6 = SPH_C32(0x082EFA98);
+		sph_u32 s7 = SPH_C32(0xEC4E6C89);
+
+  		sph_u32 X_var[32];
+
+		uint2x4* phash = (uint2x4*)pHash;
+		uint2x4* outpt = (uint2x4*)X_var;
+		outpt[0] = __ldg4(&phash[0]);
+		outpt[1] = __ldg4(&phash[1]);
+
+		//#pragma unroll 16
+		for (int i = 16; i < 32; i++){
+			X_var[i] = 0;
+		}
+
+		CORE5(X_var);
+
+		X_var[0] = 0x00000001U;
+
+		#pragma unroll 28
+		for (int i = 1; i < 29; i++){
+			X_var[i] = 0;
+		}
+		X_var[29] = 0x40290000U;
+		X_var[30] = 0x00000400U;
+		X_var[31] = 0x00000000U;
+
+		CORE5_F(X_var);
+
+		X_var[0] = s6;
+		X_var[1] = s7;
+
+		if(*(uint64_t *)&X_var[0] <= (target)){
+			uint32_t tmp = atomicExch(&resNonce[0], thread);
+			if (tmp != UINT32_MAX){
+				resNonce[1] = tmp;		
+			}
 		}
 	}
 }
 
 __host__
-void x17_haval256_cpu_init(int thr_id, uint32_t threads)
+void xevan_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target)
 {
-}
+	dim3 grid((threads + TPB_F-1)/TPB_F);
+	dim3 block(TPB_F);
 
-__host__
-void x17_haval256_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash, const int outlen)
-{
-	const uint32_t threadsperblock = 256;
-
-	dim3 grid((threads + threadsperblock-1)/threadsperblock);
-	dim3 block(threadsperblock);
-
-	x17_haval256_gpu_hash_64 <<<grid, block>>> (threads, (uint64_t*)d_hash, outlen);
+	xevan_haval512_gpu_hash_128_final <<<grid, block>>> (threads, (uint64_t*)d_hash,resNonce,target);
 }

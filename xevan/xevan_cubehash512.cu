@@ -1,12 +1,8 @@
-/*
-	Based on Tanguy Pruvot's repo
-	Provos Alexis - 2016
-*/
-
 #include "cuda_helper_alexis.h"
 #include "cuda_vectors_alexis.h"
 
 #define SWAP(a,b) { uint32_t u = a; a = b; b = u; }
+//#define SWAP xchg
 
 //#define SHUFFLE
 
@@ -75,7 +71,7 @@ void rrounds(uint32_t *x){
 	}
 }
 __global__ __launch_bounds__(TPB, 1)
-void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
+void xevan_cubehash512_gpu_hash_128(uint32_t threads, uint64_t *g_hash){
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x)>>1;
 
 	const uint32_t even = (threadIdx.x & 1);
@@ -117,28 +113,23 @@ void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
 	
 		*(uint4*)&Hash[ 0] = *(uint4*)&x[ 0];
 		*(uint4*)&Hash[ 8] = *(uint4*)&x[ 4];
-//		g_hash[thread + (2*even+0) * threads]	= *(uint2*)&x[ 0];
-//		g_hash[thread + (2*even+1) * threads]	= *(uint2*)&x[ 2];
 	}
 }
 __host__
-void x11_cubehash512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash){
-
-    // berechne wie viele Thread Blocks wir brauchen
+void xevan_cubehash512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash){
     dim3 grid((2*threads + TPB-1)/TPB);
     dim3 block(TPB);
 
-    x11_cubehash512_gpu_hash_64<<<grid, block>>>(threads, (uint64_t*)d_hash);
-
+    xevan_cubehash512_gpu_hash_128<<<grid, block>>>(threads, (uint64_t*)d_hash);
 }
 
 #else
 
-#define TPB 768
+#define TPB 512
 
 __device__ __forceinline__
 static void rrounds(uint32_t *x){
-	#pragma unroll 2
+//	#pragma unroll 2
 	for (int r = 0; r < 16; r++) {
 		/* "add x_0jklm into x_1jklmn modulo 2^32 rotate x_0jklm upwards by 7 bits" */
 		x[16] = x[16] + x[ 0]; x[ 0] = ROTL32(x[ 0], 7);x[17] = x[17] + x[ 1];x[ 1] = ROTL32(x[ 1], 7);
@@ -175,10 +166,8 @@ static void rrounds(uint32_t *x){
 	}
 }
 
-/***************************************************/
-// GPU Hash Function
-__global__ __launch_bounds__(TPB)
-void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
+__global__ __launch_bounds__(TPB,2)
+void xevan_cubehash512_gpu_hash_128(uint32_t threads, uint64_t *g_hash){
 
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 
@@ -198,22 +187,21 @@ void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
 		};
 	
 		// erste Hälfte des Hashes (32 bytes)
-		//Update32(x, (const BitSequence*)Hash);
 		*(uint2x4*)&x[ 0] ^= __ldg4((uint2x4*)&Hash[0]);
 
 		rrounds(x);
 
 		// zweite Hälfte des Hashes (32 bytes)
-	//        Update32(x, (const BitSequence*)(Hash+8));
 		*(uint2x4*)&x[ 0] ^= __ldg4((uint2x4*)&Hash[8]);
 		
+		rrounds(x);
+		rrounds(x);
 		rrounds(x);
 
 		// Padding Block
 		x[ 0] ^= 0x80;
 		rrounds(x);
 	
-	//	Final(x, (BitSequence*)Hash);
 		x[31] ^= 1;
 
 		/* "the state is then transformed invertibly through 10r identical rounds" */
@@ -227,15 +215,13 @@ void x11_cubehash512_gpu_hash_64(uint32_t threads, uint64_t *g_hash){
 	}
 }
 
-
 __host__
-void x11_cubehash512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash){
-
+void xevan_cubehash512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash){
     // berechne wie viele Thread Blocks wir brauchen
     dim3 grid((threads + TPB-1)/TPB);
     dim3 block(TPB);
 
-    x11_cubehash512_gpu_hash_64<<<grid, block>>>(threads, (uint64_t*)d_hash);
-
+    xevan_cubehash512_gpu_hash_128<<<grid, block>>>(threads, (uint64_t*)d_hash);
 }
+
 #endif

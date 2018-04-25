@@ -7,6 +7,10 @@
 #define C32   SPH_C32
 #define T32   SPH_T32
 
+#define O1   13
+#define O2    9
+#define O3    6
+
 #define INPUT_BLOCK_ADD   do { \
     B0 = T32(B0 + M0); \
     B1 = T32(B1 + M1); \

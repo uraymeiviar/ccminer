@@ -2,12 +2,7 @@
 #include "cuda_vectors_alexis.h"
 
 #define sph_u64 uint64_t
-
-static const uint64_t plain_RC[10] = {
-	0x4F01B887E8C62318, 0x52916F79F5D2A636, 0x357B0CA38E9BBC60, 0x57FE4B2EC2D7E01D, 0xDA4AF09FE5377715, 0x856BA0B10A29C958, 0x67053ECBF4105DBD, 0xD8957DA78B4127E4,
-	0x9E4717DD667CEEFB, 0x33835AAD07BF2DCA
-};
-
+__constant__ static uint2 precomputed_round_key_64[72];
 static const uint64_t plain_precomputed_round_key_64[72] = {
 	0x24AED1EAF889AB3B, 0xAFCBE94566454544, 0x89B2A4C5A4A4FE70, 0xA0E1CCE1E1A9FAC5, 0xFCB8FCFC5CC0AC48, 0x698F8F90260EF78F, 0x797985D707147996, 0xF878C8B868F8A8F8,
 	0x58704630DBBF19D3, 0xDB37CFAFD1235B29, 0x98AC958BC28A2C01, 0xA706B2C0B19E6381, 0xDB09B2B07A605E44, 0x71BC8CBCCF2C5B73, 0xD3DDEDEF240967DC, 0x197D3BD7F03B8D7B,
@@ -19,6 +14,10 @@ static const uint64_t plain_precomputed_round_key_64[72] = {
 	0xF92C9A0A7A671CD0, 0xB2B6634A532F942A, 0xB4A8ACFE46224288, 0x5935583DC75C4A47, 0xA16F5CA55D92A674, 0x395C73C48CE61777, 0xC61AEC530B3B2A08, 0x62E74D81EB58F62A,
 	0x3ABCEE01B6489548, 0x818EED6BC66B0DA5, 0x755A2688CF3DCEE0, 0xE99CF6C0DB4A8CC2, 0x1385717FD59CB754, 0x7B0B7D978A4B4143, 0x7A15F6DBBB351963, 0x27820137F64E7A6A
 };
+
+__device__ uint2 InitVector_RC[10];
+__device__ static uint64_t b0[256];
+__device__ static uint64_t b7[256];
 
 __constant__ static const sph_u64 plain_T0[256] = {
 	SPH_C64(0xD83078C018601818), SPH_C64(0x2646AF05238C2323),
@@ -918,9 +917,9 @@ void xevan_whirlpool_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash
 }
 
 __host__
-extern void xevan_whirlpool_cpu_init(int thr_id, uint32_t threads){
+void xevan_whirlpool_cpu_init(int thr_id, uint32_t threads){
 
-    table0 = (uint64_t*)plain_T0;
+    uint64_t* table0 = (uint64_t*)plain_T0;
     cudaMemcpyToSymbol(InitVector_RC, plain_RC, 10*sizeof(uint64_t),0, cudaMemcpyHostToDevice);
     cudaMemcpyToSymbol(precomputed_round_key_64, plain_precomputed_round_key_64, 72*sizeof(uint64_t),0, cudaMemcpyHostToDevice);
 	cudaMemcpyToSymbol(b0, table0, 256*sizeof(uint64_t),0, cudaMemcpyHostToDevice);

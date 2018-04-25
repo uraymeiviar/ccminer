@@ -87,7 +87,6 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  quark/cuda_skein512.cu \
 			  quark/cuda_bmw512.cu \
 			  quark/cuda_quark_keccak512.cu \
-			  quark/cuda_xevan_groestl512.cu \
 			  quark/nist5.cu \
 			  quark/quarkcoin.cu \
 			  quark/cuda_quark_compactionTest.cu \
@@ -190,8 +189,16 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x17/hmq17.cu \
 			  x17/cuda_x17_haval256.cu \
 			  x17/cuda_x17_sha512.cu \
+			  xevan/xevan_bmw512.cu \
+			  xevan/xevan_blake512.cu \
+			  xevan/xevan_cubehash512.cu \
+			  xevan/xevan_groestl512.cu \
+			  xevan/xevan_haval512.cu \
+			  xevan/xevan_jh512_keccak.cu \
+			  xevan/xevan_luffa512.cu \
 			  xevan/xevan_shavite512.cu \
 			  xevan/xevan_simd512.cu \
+			  xevan/xevan_skein512.cu \
 			  xevan/xevan_echo512.cu \
 			  xevan/xevan_hamsi512.cu \
 			  xevan/xevan_fugue512.cu \

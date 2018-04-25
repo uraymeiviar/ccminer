@@ -739,7 +739,7 @@ __constant__ static const sph_u32 AES0_C[256] = {
 #define TPBS 256
 
 __global__ __launch_bounds__(TPBS,2) 
-void xevan_shavite512_gpu_hash_64(const uint32_t threads, uint64_t *g_hash)
+void xevan_shavite512_gpu_hash_128(const uint32_t threads, uint64_t *g_hash)
 {
 	const uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 	if (thread < threads)
@@ -834,10 +834,10 @@ void xevan_shavite512_gpu_hash_64(const uint32_t threads, uint64_t *g_hash)
 }
 
 __host__
-void xevan_shavite512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash)
+void xevan_shavite512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash)
 {
 	dim3 grid((threads + TPBS-1)/TPBS);
 	dim3 block(TPBS);
 
-	xevan_shavite512_gpu_hash_64<<<grid, block>>>(threads, (uint64_t*)d_hash);
+	xevan_shavite512_gpu_hash_128<<<grid, block>>>(threads, (uint64_t*)d_hash);
 }

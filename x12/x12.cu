@@ -98,6 +98,7 @@ extern "C" void x12hash(void *output, const void *input)
 }
 
 static bool init[MAX_GPUS] = { 0 };
+static bool use_compat_kernels[MAX_GPUS] = { 0 };
 
 extern "C" int scanhash_x12(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {

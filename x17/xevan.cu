@@ -49,8 +49,7 @@
     extern void quark_keccak512_cpu_init(int thr_id, uint32_t threads);
     extern void quark_keccak512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_nonceVector, uint32_t *d_hash);
 
-    extern void x13_hamsi512_cpu_init(int thr_id, uint32_t threads);
-    extern void x13_hamsi512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void xevan_hamsi512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
 
     extern void xevan_shavite512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
 
@@ -154,11 +153,11 @@
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
-                /*
+                
         sph_hamsi512_init(&ctx_hamsi);
         sph_hamsi512(&ctx_hamsi, hash, dataLen);
         sph_hamsi512_close(&ctx_hamsi, hash);
-    
+    /*
         sph_fugue512_init(&ctx_fugue);
         sph_fugue512(&ctx_fugue, hash, dataLen);
         sph_fugue512_close(&ctx_fugue, hash);
@@ -224,11 +223,11 @@
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
-        /*
+        
         sph_hamsi512_init(&ctx_hamsi);
         sph_hamsi512(&ctx_hamsi, hash, dataLen);
         sph_hamsi512_close(&ctx_hamsi, hash);
-    
+    /*
         sph_fugue512_init(&ctx_fugue);
         sph_fugue512(&ctx_fugue, hash, dataLen);
         sph_fugue512_close(&ctx_fugue, hash);
@@ -287,7 +286,8 @@
                 cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
             }
             gpulog(LOG_INFO,thr_id, "Intensity set to %g, %u cuda threads", throughput2intensity(throughput), throughput);
-    /*
+
+            /*
             quark_blake512_cpu_init(thr_id, throughput);
             x11_simd512_cpu_init(thr_id, throughput);
             quark_jh512_cpu_init(thr_id, throughput);
@@ -295,7 +295,7 @@
             x15_whirlpool_cpu_init(thr_id, throughput, 0);
             x11_luffa512_cpu_init(thr_id, throughput);
             x11_echo512_cpu_init(thr_id, throughput);
-            x13_hamsi512_cpu_init(thr_id, throughput);
+            
             x13_fugue512_cpu_init(thr_id, throughput);
             x14_shabal512_cpu_init(thr_id, throughput);
             x17_haval256_cpu_init(thr_id, throughput);
@@ -336,9 +336,9 @@
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_hamsi512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             /*
-            x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+            x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
@@ -355,9 +355,9 @@
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_hamsi512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
              /*
-            x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
-		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
+            x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x15_whirlpool_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x17_sha512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;

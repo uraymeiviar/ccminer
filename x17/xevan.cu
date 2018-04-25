@@ -64,8 +64,7 @@
 
     extern void x11_luffa512_cpu_hash_128(int thr_id, uint32_t threads,uint32_t *d_hash);
 
-    extern void x11_echo512_cpu_init(int thr_id, uint32_t threads);
-    extern void x11_echo512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
+    extern void xevan_echo512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
 
     extern void x13_fugue512_cpu_init(int thr_id, uint32_t threads);
     extern void x13_fugue512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
@@ -151,11 +150,11 @@
         sph_simd512_init(&ctx_simd);
         sph_simd512(&ctx_simd, hash, dataLen);
         sph_simd512_close(&ctx_simd, hash);
-            /*
+
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
-    
+                /*
         sph_hamsi512_init(&ctx_hamsi);
         sph_hamsi512(&ctx_hamsi, hash, dataLen);
         sph_hamsi512_close(&ctx_hamsi, hash);
@@ -221,11 +220,11 @@
         sph_simd512_init(&ctx_simd);
         sph_simd512(&ctx_simd, hash, dataLen);
         sph_simd512_close(&ctx_simd, hash);
-    /*
+
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
-    
+        /*
         sph_hamsi512_init(&ctx_hamsi);
         sph_hamsi512(&ctx_hamsi, hash, dataLen);
         sph_hamsi512_close(&ctx_hamsi, hash);
@@ -336,8 +335,8 @@
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             /*
-            x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
@@ -355,8 +354,8 @@
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_echo512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
              /*
-            x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x14_shabal512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);

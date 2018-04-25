@@ -123,6 +123,8 @@ void xevan_groestl512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_nonc
 	xevan_groestl512_gpu_hash_64_quad<<<grid, block>>>(threads, d_hash, d_nonceVector);
 }
 
+#define SPH_C64(x)    ((uint64_t)(x ## UL))
+
 #define C64e(x)     ((SPH_C64(x) >> 56) \
           | ((SPH_C64(x) >> 40) & SPH_C64(0x000000000000FF00)) \
           | ((SPH_C64(x) >> 24) & SPH_C64(0x0000000000FF0000)) \

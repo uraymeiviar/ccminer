@@ -54,9 +54,9 @@
 
     extern void xevan_shavite512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t *d_hash);
 
-    extern int  x11_simd512_cpu_init(int thr_id, uint32_t threads);
-    extern void x11_simd512_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
-    extern void x11_simd512_cpu_free(int thr_id);
+    extern int  xevan_simd512_cpu_init(int thr_id, uint32_t threads);
+    extern void xevan_simd512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
+    extern void xevan_simd512_cpu_free(int thr_id);
 
     extern void x15_whirlpool_cpu_init(int thr_id, uint32_t threads, int mode);
     extern void x15_whirlpool_cpu_hash_64(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_nonceVector, uint32_t *d_hash, int order);
@@ -147,11 +147,11 @@
         sph_shavite512_init(&ctx_shavite);
         sph_shavite512(&ctx_shavite, hash, dataLen);
         sph_shavite512_close(&ctx_shavite, hash);
-        /*
+
         sph_simd512_init(&ctx_simd);
         sph_simd512(&ctx_simd, hash, dataLen);
         sph_simd512_close(&ctx_simd, hash);
-    
+            /*
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
@@ -217,11 +217,11 @@
         sph_shavite512_init(&ctx_shavite);
         sph_shavite512(&ctx_shavite, hash, dataLen);
         sph_shavite512_close(&ctx_shavite, hash);
-                /*
+                
         sph_simd512_init(&ctx_simd);
         sph_simd512(&ctx_simd, hash, dataLen);
         sph_simd512_close(&ctx_simd, hash);
-    
+    /*
         sph_echo512_init(&ctx_echo);
         sph_echo512(&ctx_echo, hash, dataLen);
         sph_echo512_close(&ctx_echo, hash);
@@ -303,6 +303,7 @@
 */
             quark_skein512_cpu_init(thr_id, throughput);
             groestl512_cpu_init(thr_id, throughput);
+            xevan_simd512_cpu_init(thr_id, throughput);
 
             CUDA_SAFE_CALL(cudaMalloc(&d_hash[thr_id], 8 * sizeof(uint64_t) * throughput));
             CUDA_SAFE_CALL(cudaMalloc(&d_resNonce[thr_id], NBN * sizeof(uint32_t)));
@@ -334,8 +335,8 @@
             x11_luffa512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             /*
-            x11_simd512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
@@ -353,8 +354,8 @@
             x11_luffa512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
             x11_cubehash512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
             xevan_shavite512_cpu_hash_64(thr_id, throughput, d_hash[thr_id]); order++;
+            xevan_simd512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]); order++;
              /*
-            x11_simd512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x11_echo512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
             x13_hamsi512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
 		    x13_fugue512_cpu_hash_64(thr_id, throughput, pdata[19], NULL, d_hash[thr_id], order++);
@@ -417,10 +418,10 @@
         cudaFree(d_hash[thr_id]);
 
     	quark_blake512_cpu_free(thr_id);
-        x11_simd512_cpu_free(thr_id);
+        xevan_simd512_cpu_free(thr_id);
         x13_fugue512_cpu_free(thr_id);
         x15_whirlpool_cpu_free(thr_id);
-        x11_simd512_cpu_free(thr_id);
+        xevan_simd512_cpu_free(thr_id);
 
         cuda_check_cpu_free(thr_id);
 

@@ -191,6 +191,7 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  x17/cuda_x17_haval256.cu \
 			  x17/cuda_x17_sha512.cu \
 			  x17/xevan.cu \
+			  xevan/xevan_shavite512.cu \
 			  scrypt.cpp scrypt-jane.cpp \
     		  scrypt/blake.cu \
     		  scrypt/keccak.cu \

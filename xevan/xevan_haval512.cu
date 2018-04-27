@@ -379,7 +379,7 @@ void xevan_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash)
 #define TPB_F 512
 
 __global__ __launch_bounds__(TPB_F, 4)
-void xevan_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __restrict__ g_hash,uint32_t* resNonce,const uint64_t target)
+void xevan_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __restrict__ g_hash)
 {
 	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
 
@@ -424,21 +424,14 @@ void xevan_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __
 
 		X_var[0] = s6;
 		X_var[1] = s7;
-
-		if(*(uint64_t *)&X_var[0] <= (target)){
-			uint32_t tmp = atomicExch(&resNonce[0], thread);
-			if (tmp != UINT32_MAX){
-				resNonce[1] = tmp;		
-			}
-		}
 	}
 }
 
 __host__
-void xevan_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target)
+void xevan_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash)
 {
 	dim3 grid((threads + TPB_F-1)/TPB_F);
 	dim3 block(TPB_F);
 
-	xevan_haval512_gpu_hash_128_final <<<grid, block>>> (threads, (uint64_t*)d_hash,resNonce,target);
+	xevan_haval512_gpu_hash_128_final <<<grid, block>>> (threads, (uint64_t*)d_hash);
 }

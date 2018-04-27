@@ -32,8 +32,6 @@
     #define NBN 2
 
     static uint32_t *d_hash[MAX_GPUS];
-    static uint32_t *d_resNonce[MAX_GPUS];
-    static uint32_t *h_resNonce[MAX_GPUS];
     
     extern void xevan_blake512_cpu_hash_80_bmw_128(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_hash);
     extern void xevan_blake512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_outputHash);
@@ -55,7 +53,7 @@
     extern void xevan_cubehash512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
     extern void xevan_sha512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
     extern void xevan_haval512_cpu_hash_128(int thr_id, uint32_t threads, uint32_t *d_hash);
-    extern void xevan_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash, uint32_t *resNonce, uint64_t target);
+    extern void xevan_haval512_cpu_hash_128_final(int thr_id, uint32_t threads, uint32_t *d_hash);
     extern void xevan_bmw512_cpu_hash_64x(int thr_id, uint32_t threads, uint32_t *d_nonceVector, uint32_t *d_hash);
 
     extern "C" void xevanhash(void *output, const void *input)
@@ -262,13 +260,9 @@
 
             xevan_simd512_cpu_init(thr_id, throughput);
 
-            CUDA_SAFE_CALL(cudaMalloc(&d_hash[thr_id], 8 * sizeof(uint64_t) * throughput));
-            CUDA_SAFE_CALL(cudaMalloc(&d_resNonce[thr_id], NBN * sizeof(uint32_t)));
-            h_resNonce[thr_id] = (uint32_t*) malloc(NBN  * 8 * sizeof(uint32_t));
-            if(h_resNonce[thr_id] == NULL){
-                gpulog(LOG_ERR,thr_id,"Host memory allocation failed");
-                exit(EXIT_FAILURE);
-            }		
+            CUDA_CALL_OR_RET_X(cudaMalloc(&d_hash[thr_id], 16 * sizeof(uint32_t) * throughput), 0);
+
+            cuda_check_cpu_init(thr_id, throughput);
             init[thr_id] = true;
         }
     
@@ -277,7 +271,9 @@
             be32enc(&endiandata[k], pdata[k]);
     
         xevan_blake512_cpu_setBlock_80(thr_id, endiandata);
-        cudaMemset(d_resNonce[thr_id], 0xff, NBN*sizeof(uint32_t));
+        cuda_check_cpu_setTarget(ptarget);
+
+        int warn = 0;
     
         do {
             xevan_blake512_cpu_hash_80_bmw_128(thr_id, throughput, pdata[19], d_hash[thr_id]);
@@ -311,47 +307,58 @@
             xevan_shabal512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]);
             xevan_whirlpool_cpu_hash_128(thr_id, throughput, d_hash[thr_id]);
             xevan_sha512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]);
-            xevan_haval512_cpu_hash_128_final(thr_id, throughput, d_hash[thr_id],d_resNonce[thr_id],*(uint64_t*)&ptarget[6]);
+            xevan_haval512_cpu_hash_128_final(thr_id, throughput, d_hash[thr_id]);
 
-            cudaMemcpy(h_resNonce[thr_id], d_resNonce[thr_id], NBN*sizeof(uint32_t), cudaMemcpyDeviceToHost);
+            *hashes_done = pdata[19] - first_nonce + throughput;
 
-            if (h_resNonce[thr_id][0] != UINT32_MAX){
+            work->nonces[0] = cuda_check_hash(thr_id, throughput, pdata[19], d_hash[thr_id]);
+            if (work->nonces[0] != UINT32_MAX)
+            {
                 const uint32_t Htarg = ptarget[7];
-                const uint32_t startNounce = pdata[19];
-                uint32_t vhash64[8];
-                be32enc(&endiandata[19], startNounce + h_resNonce[thr_id][0]);
-                xevanhash(vhash64, endiandata);
+                uint32_t _ALIGN(64) vhash[8];
+                be32enc(&endiandata[19], work->nonces[0]);
+                x17hash(vhash, endiandata);
 
-                if (vhash64[7] <= Htarg && fulltest(vhash64, ptarget)) {
-                    int res = 1;
-                    *hashes_done = pdata[19] - first_nonce + throughput + 1;
-                    work_set_target_ratio(work, vhash64);
-                    pdata[19] = startNounce + h_resNonce[thr_id][0];
-                    if (h_resNonce[thr_id][1] != UINT32_MAX) {
-                        pdata[21] = startNounce+h_resNonce[thr_id][1];
-                        if(!opt_quiet)
-                            gpulog(LOG_BLUE,dev_id,"Found 2nd nonce: %08x", pdata[21]);
-                        be32enc(&endiandata[19], pdata[21]);
-                        xevanhash(vhash64, endiandata);
-                        if (bn_hash_target_ratio(vhash64, ptarget) > work->shareratio[0]){
-                            work_set_target_ratio(work, vhash64);
-                            xchg(pdata[19],pdata[21]);
-                        }
-                        res++;
+                if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
+                    work->valid_nonces = 1;
+                    work->nonces[1] = cuda_check_hash_suppl(thr_id, throughput, pdata[19], d_hash[thr_id], 1);
+                    work_set_target_ratio(work, vhash);
+                    if (work->nonces[1] != 0) {
+                        be32enc(&endiandata[19], work->nonces[1]);
+                        x17hash(vhash, endiandata);
+                        bn_set_target_ratio(work, vhash, 1);
+                        work->valid_nonces++;
+                        pdata[19] = max(work->nonces[0], work->nonces[1]) + 1;
+                    } else {
+                        pdata[19] = work->nonces[0] + 1; // cursor
                     }
-                    return res;
+                    return work->valid_nonces;
                 }
-                else {
-                    gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU!", h_resNonce[thr_id][0]);
-                    cudaMemset(d_resNonce[thr_id], 0xff, NBN*sizeof(uint32_t));				
+                else if (vhash[7] > Htarg) {
+                    // x11+ coins could do some random error, but not on retry
+                    gpu_increment_reject(thr_id);
+                    if (!warn) {
+                        warn++;
+                        pdata[19] = work->nonces[0] + 1;
+                        continue;
+                    } else {
+                        if (!opt_quiet)
+                        gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU!", work->nonces[0]);
+                        warn = 0;
+                    }
                 }
             }
 
+            if ((uint64_t)throughput + pdata[19] >= max_nonce) {
+                pdata[19] = max_nonce;
+                break;
+            }
+
             pdata[19] += throughput;
-        } while (!work_restart[thr_id].restart && ((uint64_t)max_nonce > (uint64_t)throughput + pdata[19]));
 
-        *hashes_done = pdata[19] - first_nonce + 1;
+        } while (pdata[19] < max_nonce && !work_restart[thr_id].restart);
 
+        *hashes_done = pdata[19] - first_nonce;
         return 0;
     }
     
@@ -362,12 +369,11 @@
             return;
     
         cudaDeviceSynchronize();
-    
-        free(h_resNonce[thr_id]);
-        cudaFree(d_resNonce[thr_id]);
         cudaFree(d_hash[thr_id]);
 
         xevan_simd512_cpu_free(thr_id);
+
+        cuda_check_cpu_free(thr_id);
 
         cudaDeviceSynchronize();
         init[thr_id] = false;

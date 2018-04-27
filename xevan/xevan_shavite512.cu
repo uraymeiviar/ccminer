@@ -5,6 +5,32 @@
 #define sph_u64 uint64_t
 
 #define AESx(x)   SPH_C32(x)
+#define AES0      AES0_S
+#define AES1      AES1_S
+#define AES2      AES2_S
+#define AES3      AES3_S
+
+#define AES_ROUND_LE(X0, X1, X2, X3, K0, K1, K2, K3, Y0, Y1, Y2, Y3)   do { \
+  (Y0) = AES0[__byte_perm(X0, 0, 0x4440)] \
+    ^ AES1[__byte_perm(X1, 0, 0x4441)] \
+    ^ AES2[__byte_perm(X2, 0, 0x4442)] \
+    ^ __ldg(&AES3_C[__byte_perm(X3, 0, 0x4443)]) ^ (K0); \
+  (Y1) = __ldg(&AES0_C[__byte_perm(X1, 0, 0x4440)]) \
+    ^ AES1[__byte_perm(X2, 0, 0x4441)] \
+    ^ AES2[__byte_perm(X3, 0, 0x4442)] \
+    ^ __ldg(&AES3_C[__byte_perm(X0, 0, 0x4443)]) ^ (K1); \
+  (Y2) = AES0[__byte_perm(X2, 0, 0x4440)] \
+    ^ AES1[__byte_perm(X3, 0, 0x4441)] \
+    ^ AES2[__byte_perm(X0, 0, 0x4442)] \
+    ^ __ldg(&AES3_C[__byte_perm(X1, 0, 0x4443)]) ^ (K2); \
+  (Y3) = AES0[__byte_perm(X3, 0, 0x4440)] \
+    ^ AES1[__byte_perm(X0, 0, 0x4441)] \
+    ^ AES2[__byte_perm(X1, 0, 0x4442)] \
+    ^ __ldg(&AES3_C[__byte_perm(X2, 0, 0x4443)]) ^ (K3); \
+} while (0)
+
+#define AES_ROUND_NOKEY_LE(X0, X1, X2, X3, Y0, Y1, Y2, Y3) \
+AES_ROUND_LE(X0, X1, X2, X3, 0, 0, 0, 0, Y0, Y1, Y2, Y3)
 
 __constant__ static const sph_u32 AES0_C[256] = {
     AESx(0xA56363C6), AESx(0x847C7CF8), AESx(0x997777EE), AESx(0x8D7B7BF6),
@@ -139,42 +165,6 @@ __constant__ static const sph_u32 AES0_C[256] = {
     AESx(0x82C34141), AESx(0x29B09999), AESx(0x5A772D2D), AESx(0x1E110F0F),
     AESx(0x7BCBB0B0), AESx(0xA8FC5454), AESx(0x6DD6BBBB), AESx(0x2C3A1616)
   };
-  
-
-#define sph_u32 uint32_t
-#define sph_u64 uint64_t
-
-#define AES0      AES0_S
-#define AES1      AES1_S
-#define AES2      AES2_S
-#define AES3      AES3_S
-
-#define AES0      AES0_S
-#define AES1      AES1_S
-#define AES2      AES2_S
-#define AES3      AES3_S
-
-#define AES_ROUND_LE(X0, X1, X2, X3, K0, K1, K2, K3, Y0, Y1, Y2, Y3)   do { \
-    (Y0) = AES0[__byte_perm(X0, 0, 0x4440)] \
-      ^ AES1[__byte_perm(X1, 0, 0x4441)] \
-      ^ AES2[__byte_perm(X2, 0, 0x4442)] \
-      ^ __ldg(&AES3_C[__byte_perm(X3, 0, 0x4443)]) ^ (K0); \
-    (Y1) = __ldg(&AES0_C[__byte_perm(X1, 0, 0x4440)]) \
-      ^ AES1[__byte_perm(X2, 0, 0x4441)] \
-      ^ AES2[__byte_perm(X3, 0, 0x4442)] \
-      ^ __ldg(&AES3_C[__byte_perm(X0, 0, 0x4443)]) ^ (K1); \
-    (Y2) = AES0[__byte_perm(X2, 0, 0x4440)] \
-      ^ AES1[__byte_perm(X3, 0, 0x4441)] \
-      ^ AES2[__byte_perm(X0, 0, 0x4442)] \
-      ^ __ldg(&AES3_C[__byte_perm(X1, 0, 0x4443)]) ^ (K2); \
-    (Y3) = AES0[__byte_perm(X3, 0, 0x4440)] \
-      ^ AES1[__byte_perm(X0, 0, 0x4441)] \
-      ^ AES2[__byte_perm(X1, 0, 0x4442)] \
-      ^ __ldg(&AES3_C[__byte_perm(X2, 0, 0x4443)]) ^ (K3); \
-  } while (0)
-
-#define AES_ROUND_NOKEY_LE(X0, X1, X2, X3, Y0, Y1, Y2, Y3) \
-  AES_ROUND_LE(X0, X1, X2, X3, 0, 0, 0, 0, Y0, Y1, Y2, Y3)
 
   #define AES_ROUND_NOKEY(x0, x1, x2, x3)   do { \
     sph_u32 t0 = (x0); \

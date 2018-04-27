@@ -65,7 +65,6 @@ __global__ __launch_bounds__(512, 4)
 void xevan_checkhash_128(uint32_t threads, uint32_t startNounce, const uint64_t *hash, uint32_t *resNonces)
 {
     uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
-    uint32_t validCount = 0;
 	if (thread < threads)
 	{
         const uint32_t *inpHash = (const uint32_t *)&hash[thread<<3];

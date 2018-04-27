@@ -54,11 +54,7 @@
     A01 ^= Whigh; \
 } while (0)
 
-#define SWAP(v1, v2)   do { \
-    sph_u32 tmp = (v1); \
-    (v1) = (v2); \
-    (v2) = tmp; \
-} while (0)
+#define SWAP(x, y) { x ^= y; y = x ^ y; x ^= y; }
 
 #define SWAP_BC   do { \
     SWAP(B0, C0); \
@@ -79,13 +75,18 @@
     SWAP(BF, CF); \
 } while (0)
 
-#define PERM_ELT(xa0, xa1, xb0, xb1, xb2, xb3, xc, xm)   do { \
-    xa0 = T32((xa0 \
-        ^ (((xa1 << 15) | (xa1 >> 17)) * 5U) \
-        ^ xc) * 3U) \
-        ^ xb1 ^ (xb2 & ~xb3) ^ xm; \
-    xb0 = T32(~(((xb0 << 1) | (xb0 >> 31)) ^ xa0)); \
-} while (0)
+__device__ __forceinline__ void PERM_ELT(uint32_t &xa0,const uint32_t xa1,uint32_t &xb0,const uint32_t xb1,const uint32_t xb2,const uint32_t xb3,const uint32_t xc,const uint32_t xm){
+
+    uint32_t tmp;
+    #if __CUDA_ARCH__ >= 500 && CUDA_VERSION >= 7050
+        asm ("lop3.b32 %0, %1, %2, %3, 0x9A;" : "=r"(tmp)	: "r"(xb2),"r"(xb3),"r"(xm));		// 0x9A = (F0 &(~CC)) ^ (AA)
+    #else
+        tmp = (xb2 & ~xb3) ^ xm;
+    #endif
+    
+    xa0 = ((xa0 ^ xc ^ (ROTL32(xa1, 15) * 5U)) * 3U) ^ xb1 ^ tmp;
+    xb0 = xor3x(0xFFFFFFFF, xa0, ROTL32(xb0, 1));
+}
 
 #define PERM_STEP_0   do { \
     PERM_ELT(A00, A0B, B0, BD, B9, B6, C8, M0); \

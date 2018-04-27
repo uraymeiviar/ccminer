@@ -1,8 +1,7 @@
 #include "cuda_helper_alexis.h"
 #include "cuda_vectors_alexis.h"
 
-#define SWAP(a,b) { uint32_t u = a; a = b; b = u; }
-//#define SWAP xchg
+#define SWAP(x, y) { x ^= y; y = x ^ y; x ^= y; }
 
 //#define SHUFFLE
 

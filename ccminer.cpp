@@ -81,10 +81,10 @@ struct workio_cmd {
 	int pooln;
 };
 
-bool opt_debug = true;
-bool opt_debug_diff = true;
+bool opt_debug = false;
+bool opt_debug_diff = false;
 bool opt_debug_threads = false;
-bool opt_protocol = true;
+bool opt_protocol = false;
 bool opt_benchmark = false;
 bool opt_showdiff = true;
 bool opt_hwmonitor = true;
@@ -2158,14 +2158,13 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		case ALGO_BITCORE:
 		case ALGO_X16R:
 		case ALGO_X16S:
+		case ALGO_XEVAN:
 			work_set_target(work, sctx->job.diff / (256.0 * opt_difficulty));
 			break;
 		case ALGO_KECCAK:
 		case ALGO_LYRA2:
 			work_set_target(work, sctx->job.diff / (128.0 * opt_difficulty));
 			break;
-		case ALGO_XEVAN:
-            work_set_target(work, sctx->job.diff / (256.0 * opt_difficulty));
 		case ALGO_EQUIHASH:
 			equi_work_set_target(work, sctx->job.diff / opt_difficulty);
 			break;

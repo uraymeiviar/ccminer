@@ -422,8 +422,23 @@ void xevan_haval512_gpu_hash_128_final(const uint32_t threads,const uint64_t* __
 
 		CORE5_F(X_var);
 
-		X_var[0] = s6;
-		X_var[1] = s7;
+		pHash[0] = s0;
+		pHash[1] = s1;
+		pHash[2] = s2;
+		pHash[3] = s3;
+		pHash[4] = s4;
+		pHash[5] = s5;
+		pHash[6] = s6;
+		pHash[7] = s7;
+
+		pHash[8] = 0;
+		pHash[9] = 0;
+		pHash[10] = 0;
+		pHash[11] = 0;
+		pHash[12] = 0;
+		pHash[13] = 0;
+		pHash[14] = 0;
+		pHash[15] = 0;
 	}
 }
 

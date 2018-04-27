@@ -717,7 +717,7 @@ struct tx {
 	uint32_t len;
 };
 
-#define MAX_NONCES 2
+#define MAX_NONCES 4
 struct work {
 	uint32_t data[48];
 	uint32_t target[8];

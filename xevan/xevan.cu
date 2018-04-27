@@ -39,8 +39,8 @@ static __thread bool init_done = false;
 __host__
 void xevan_check_cpu_init(int thr_id, uint32_t threads)
 {
-    CUDA_CALL_OR_RET(cudaMalloc(&d_resNonces[thr_id], 32));
-    CUDA_SAFE_CALL(cudaMallocHost(&h_resNonces[thr_id], 32));
+    CUDA_CALL_OR_RET(cudaMalloc(&d_resNonces[thr_id], sizeof(uint32_t) * MAX_NONCES));
+    CUDA_SAFE_CALL(cudaMallocHost(&h_resNonces[thr_id], sizeof(uint32_t) * MAX_NONCES));
     init_done = true;
 }
 
@@ -64,95 +64,37 @@ void xevan_check_cpu_setTarget(const void *ptarget)
 __global__ __launch_bounds__(512, 4)
 void xevan_checkhash_128(uint32_t threads, uint32_t startNounce, const uint64_t *hash, uint32_t *resNonces)
 {
-	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+    uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
+    uint32_t validCount = 0;
 	if (thread < threads)
 	{
         const uint32_t *inpHash = (const uint32_t *)&hash[thread<<3];
 
-		if (resNonces[0] == UINT32_MAX) {
+		if (resNonces[thread % MAX_NONCES] == UINT32_MAX) {
             const uint64_t checkhash = *(const uint64_t*)&inpHash[6];
             const uint64_t target    = *(const uint64_t*)&pTarget[6];
-            if (checkhash <= target)
-				resNonces[0] = (startNounce + thread);
+            if (checkhash <= target){
+                resNonces[thread % MAX_NONCES] = (startNounce + thread);
+            }
 		}
 	}
 }
 
 __host__
-uint32_t xevan_check_hash(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash)
+void xevan_check_hash(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash)
 {
-	cudaMemset(d_resNonces[thr_id], 0xff, sizeof(uint32_t));
+    cudaMemset(d_resNonces[thr_id], 0xff, sizeof(uint32_t)*MAX_NONCES);
 
 	const uint32_t threadsperblock = 512;
 
 	dim3 grid((threads + threadsperblock - 1) / threadsperblock);
 	dim3 block(threadsperblock);
-
-	if (bench_algo >= 0) // dont interrupt the global benchmark
-		return UINT32_MAX;
-
-	if (!init_done) {
-		applog(LOG_ERR, "missing call to cuda_check_cpu_init");
-		return UINT32_MAX;
-	}
 
 	xevan_checkhash_128 <<<grid, block>>> (threads, startNounce, (uint64_t*)d_inputHash, d_resNonces[thr_id]);
 	cudaThreadSynchronize();
 
-	cudaMemcpy(h_resNonces[thr_id], d_resNonces[thr_id], sizeof(uint32_t), cudaMemcpyDeviceToHost);
-	return h_resNonces[thr_id][0];
+	cudaMemcpy(h_resNonces[thr_id], d_resNonces[thr_id], sizeof(uint32_t)*MAX_NONCES, cudaMemcpyDeviceToHost);
 }
-
-__global__ __launch_bounds__(512, 4)
-void xevan_checkhash_128_suppl(uint32_t startNounce, const uint64_t *hash, uint32_t *resNonces)
-{
-	uint32_t thread = (blockDim.x * blockIdx.x + threadIdx.x);
-	uint32_t *inpHash = (uint32_t *)&hash[thread<<3];
-
-    const uint64_t checkhash = *(const uint64_t*)&inpHash[6];
-    const uint64_t target    = *(const uint64_t*)&pTarget[6];
-    if (checkhash <= target){
-        int resNum = ++resNonces[0];
-        __threadfence();
-        if (resNum < 8)
-            resNonces[resNum] = (startNounce + thread);
-    }
-}
-
-__host__
-uint32_t xevan_check_hash_suppl(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *d_inputHash, uint8_t numNonce)
-{
-	uint32_t rescnt, result = 0;
-
-	const uint32_t threadsperblock = 512;
-	dim3 grid((threads + threadsperblock - 1) / threadsperblock);
-	dim3 block(threadsperblock);
-
-	if (!init_done) {
-		applog(LOG_ERR, "missing call to cuda_check_cpu_init");
-		return 0;
-	}
-
-	// first element stores the count of found nonces
-	cudaMemset(d_resNonces[thr_id], 0, sizeof(uint32_t));
-
-	xevan_checkhash_128_suppl <<<grid, block>>> (startNounce, (uint64_t*)d_inputHash, d_resNonces[thr_id]);
-	cudaThreadSynchronize();
-
-	cudaMemcpy(h_resNonces[thr_id], d_resNonces[thr_id], 32, cudaMemcpyDeviceToHost);
-	rescnt = h_resNonces[thr_id][0];
-	if (rescnt > numNonce) {
-		if (numNonce <= rescnt) {
-			result = h_resNonces[thr_id][numNonce+1];
-		}
-		if (opt_debug)
-			applog(LOG_WARNING, "Found %d nonces: %x + %x", rescnt, h_resNonces[thr_id][1], result);
-	}
-
-	return result;
-}
-
-#define NBN 2
 
 static uint32_t *d_hash[MAX_GPUS];
 
@@ -396,9 +338,7 @@ extern "C" int scanhash_xevan(int thr_id, struct work* work, uint32_t max_nonce,
         be32enc(&endiandata[k], pdata[k]);
 
     xevan_blake512_cpu_setBlock_80(thr_id, endiandata);
-
     int warn = 0;
-
     do {
         xevan_blake512_cpu_hash_80_bmw_128(thr_id, throughput, pdata[19], d_hash[thr_id]);
         xevan_groestl512_cpu_hash_128(thr_id, throughput, d_hash[thr_id]);
@@ -434,43 +374,46 @@ extern "C" int scanhash_xevan(int thr_id, struct work* work, uint32_t max_nonce,
         xevan_haval512_cpu_hash_128_final(thr_id, throughput, d_hash[thr_id]);
 
         *hashes_done = pdata[19] - first_nonce + throughput;
+        xevan_check_hash(thr_id, throughput, pdata[19], d_hash[thr_id]);
 
-        work->nonces[0] = xevan_check_hash(thr_id, throughput, pdata[19], d_hash[thr_id]);
-        if (work->nonces[0] != UINT32_MAX)
-        {
-            const uint32_t Htarg = ptarget[7];
-            uint32_t _ALIGN(64) vhash[8];
-            be32enc(&endiandata[19], work->nonces[0]);
-            xevanhash(vhash, endiandata);
-
-            if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
-                work->valid_nonces = 1;
-                work->nonces[1] = xevan_check_hash_suppl(thr_id, throughput, pdata[19], d_hash[thr_id], 1);
-                work_set_target_ratio(work, vhash);
-                if (work->nonces[1] != 0) {
-                    be32enc(&endiandata[19], work->nonces[1]);
-                    xevanhash(vhash, endiandata);
-                    bn_set_target_ratio(work, vhash, 1);
+        work->valid_nonces = 0;
+        for(int n=0 ; n<MAX_NONCES ; n++){
+            uint32_t nonce = h_resNonces[thr_id][n];
+            if (nonce != UINT32_MAX)
+            {
+                const uint32_t Htarg = ptarget[7];
+                uint32_t _ALIGN(64) vhash[8];
+                work->nonces[work->valid_nonces] = nonce;
+                be32enc(&endiandata[19], nonce);
+                xevanhash(vhash, endiandata);
+    
+                if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
+                    bn_set_target_ratio(work, vhash, work->valid_nonces);
+                    if(work->nonces[work->valid_nonces] + 1 > pdata[19]){
+                        pdata[19] = work->nonces[work->valid_nonces] + 1; 
+                    }
                     work->valid_nonces++;
-                    pdata[19] = max(work->nonces[0], work->nonces[1]) + 1;
-                } else {
-                    pdata[19] = work->nonces[0] + 1; // cursor
                 }
-                return work->valid_nonces;
-            }
-            else if (vhash[7] > Htarg) {
-                // x11+ coins could do some random error, but not on retry
-                gpu_increment_reject(thr_id);
-                if (!warn) {
-                    warn++;
-                    pdata[19] = work->nonces[0] + 1;
-                    continue;
-                } else {
-                    if (!opt_quiet)
-                    gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU!", work->nonces[0]);
-                    warn = 0;
+                else if (vhash[7] > Htarg) {
+                    // x11+ coins could do some random error, but not on retry
+                    gpu_increment_reject(thr_id);
+                    if (!warn) {
+                        warn++;
+                        pdata[19] = work->nonces[work->valid_nonces] + 1;
+                        continue;
+                    } else {
+                        if (!opt_quiet)
+                            gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU! ( %08x > %08x )", nonce,vhash[7],Htarg);
+                        warn = 0;
+                    }
                 }
             }
+        }
+
+        if(work->valid_nonces > 0){
+            if (work->valid_nonces > 1)
+			    applog(LOG_WARNING, "Found multiple nonces : %d, from GPU #%d (%s)", work->valid_nonces, thr_id, device_name[dev_id]);
+            return work->valid_nonces;
         }
 
         if ((uint64_t)throughput + pdata[19] >= max_nonce) {

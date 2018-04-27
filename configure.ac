@@ -1,4 +1,4 @@
-AC_INIT([urayminer], [1.1], [], [urayminer], [https://github.com/uraymeiviar/urayminer])
+AC_INIT([urayminer], [1.2.1], [], [urayminer], [https://github.com/uraymeiviar/urayminer])
 
 AC_PREREQ([2.59c])
 AC_CANONICAL_SYSTEM

@@ -39,9 +39,9 @@ Supported Algorithm
     dmd-gr      Diamond-Groestl
     fresh       Freshcoin (shavite 80)
     fugue256    Fuguecoin
-    graft       Cryptonight v8\n\
-    groestl     Groestlcoin\n"
-    heavy       Heavycoin\n"
+    graft       Cryptonight v8
+    groestl     Groestlcoin
+    heavy       Heavycoin
     hmq1725     Doubloons / Espers
     hsr         X13+SM3
     jackpot     JHA v8
@@ -87,7 +87,10 @@ Supported Algorithm
     x16r        X16R (Raven)
     x16s	    X16S (Pidgeon)
     x17         X17
+    xevan       Bitsend
     wildkeccak  Boolberry
     zr5         ZR5 (ZiftrCoin)
 
 run with argument `--help` for more information to use the program
+
+bitcoin donation for me : `1UrayjqRjSJjuouhJnkczy5AuMqJGRK4b`

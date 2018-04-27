@@ -309,6 +309,7 @@ Options:\n\
 			x16r        X16R (Raven)\n\
 			x16s	    X16S (Pidgeon)\n\
 			x17         X17\n\
+			xevan		Bitsend\n\
 			wildkeccak  Boolberry\n\
 			zr5         ZR5 (ZiftrCoin)\n\
   -d, --devices         Comma separated list of CUDA devices to use.\n\
@@ -839,7 +840,7 @@ static bool work_decode(const json_t *val, struct work *work)
 int share_result(int result, int pooln, double sharediff, const char *reason)
 {
 	const char *flag;
-	char suppl[32] = { 0 };
+	char suppl[48] = { 0 };
 	char solved[16] = { 0 };
 	char s[32] = { 0 };
 	double hashrate = 0.;
@@ -861,9 +862,9 @@ int share_result(int result, int pooln, double sharediff, const char *reason)
 
 	format_hashrate(hashrate, s);
 	if (opt_showdiff)
-		sprintf(suppl, "diff %.3f", sharediff);
+		sprintf(suppl, "diff %.3f best %.2f net:%.1f", sharediff, p->best_share,net_diff);
 	else // accepted percent
-		sprintf(suppl, "%.2f%%", 100. * p->accepted_count / (p->accepted_count + p->rejected_count));
+		sprintf(suppl, "%.2f%% best %.2f", 100. * p->accepted_count / (p->accepted_count + p->rejected_count), p->best_share);
 
 	if (!net_diff || sharediff < net_diff) {
 		flag = use_colors ?
@@ -878,10 +879,11 @@ int share_result(int result, int pooln, double sharediff, const char *reason)
 		sprintf(solved, " solved: %u", p->solved_count);
 	}
 
-	applog(LOG_NOTICE, "shares: %lu/%lu (%s), %s %s%s",
+	applog(LOG_NOTICE, "%s %s%s : %lu/%lu (%s)",
+			s, flag, solved,
 			p->accepted_count,
 			p->accepted_count + p->rejected_count,
-			suppl, s, flag, solved);
+			suppl);
 	if (reason) {
 		applog(LOG_WARNING, "reject reason: %s", reason);
 		if (!check_dups && strncasecmp(reason, "duplicate", 9) == 0) {
@@ -2157,6 +2159,7 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		case ALGO_BITCORE:
 		case ALGO_X16R:
 		case ALGO_X16S:
+		case ALGO_XEVAN:
 			work_set_target(work, sctx->job.diff / (256.0 * opt_difficulty));
 			break;
 		case ALGO_KECCAK:
@@ -2736,6 +2739,9 @@ static void *miner_thread(void *userdata)
 			case ALGO_SCRYPT_JANE:
 				minmax = 0x1000;
 				break;
+			case ALGO_XEVAN:
+				minmax = 0x300000;
+				break;
 			}
 			max64 = max(minmax - 1, max64);
 		}
@@ -2989,6 +2995,9 @@ static void *miner_thread(void *userdata)
 		case ALGO_X17:
 			rc = scanhash_x17(thr_id, &work, max_nonce, &hashes_done);
 			break;
+		case ALGO_XEVAN:
+			rc = scanhash_xevan(thr_id, &work, max_nonce, &hashes_done);
+			break;
 		case ALGO_ZR5:
 			rc = scanhash_zr5(thr_id, &work, max_nonce, &hashes_done);
 			break;
@@ -3135,18 +3144,20 @@ static void *miner_thread(void *userdata)
 				continue;
 			}
 
-			// second nonce found, submit too (on pool only!)
-			if (rc > 1 && work.nonces[1]) {
-				work.submit_nonce_id = 1;
-				nonceptr[0] = work.nonces[1];
-				if (opt_algo == ALGO_ZR5) {
-					work.data[0] = work.data[22]; // pok
-					work.data[22] = 0;
+			if (rc > 1) {
+				// second nonce found, submit too (on pool only!)
+				for(int nonce_ndx = 1 ; nonce_ndx < rc ; nonce_ndx++){
+					work.submit_nonce_id = nonce_ndx;
+					nonceptr[0] = work.nonces[nonce_ndx];
+					if (opt_algo == ALGO_ZR5) {
+						work.data[0] = work.data[22]; // pok
+						work.data[22] = 0;
+					}
+					if (!submit_work(mythr, &work))
+						break;
+					nonceptr[0] = curnonce;
+					work.nonces[nonce_ndx] = 0; // reset
 				}
-				if (!submit_work(mythr, &work))
-					break;
-				nonceptr[0] = curnonce;
-				work.nonces[1] = 0; // reset
 			}
 		}
 	}
@@ -3461,7 +3472,7 @@ wait_stratum_url:
 				static uint32_t last_block_height;
 				if ((!opt_quiet || !firstwork_time) && stratum.job.height != last_block_height) {
 					last_block_height = stratum.job.height;
-					applog(LOG_BLUE, "%s : %s#%d, diff %.3f", pool->short_url, algo_names[opt_algo],
+					applog(LOG_BLUE, "%s : %s block %d, diff %.3f", pool->short_url, algo_names[opt_algo],
 							stratum.job.height, net_diff);
 				}
 				restart_threads();
@@ -4502,7 +4513,8 @@ int main(int argc, char *argv[])
 			CUDART_VERSION/1000, (CUDART_VERSION % 1000)/10, arch);
 		printf("  Originally based on Christian Buchner and Christian H. project\n");
 		printf("  Include some kernels from alexis78, djm34, djEzo, tsiv and krnlx.\n\n");
-		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n\n");
+		printf("BTC donation address: 1AJdfCpLWPNoAMDfHF1wD5y8VgKSSTHxPo (tpruvot)\n");
+		printf("                      1UrayjqRjSJjuouhJnkczy5AuMqJGRK4b  (uraymeiviar)\n\n");
 	}
 
 	rpc_user = strdup("");

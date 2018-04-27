@@ -3,6 +3,7 @@
  *
  * JH80 by tpruvot - 2017 - under GPLv3
  **/
+
 #include <cuda_helper.h>
 
 // #include <stdio.h>  // printf

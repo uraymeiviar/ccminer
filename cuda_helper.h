@@ -444,6 +444,12 @@ uint64_t SWAPDWORDS(uint64_t value)
 #endif
 }
 
+__device__ __forceinline__
+uint2 SWAPDWORDS2(uint2 value){
+	return make_uint2(value.y, value.x);
+}
+
+
 /* lyra2/bmw - uint2 vector's operators */
 
 __device__ __forceinline__

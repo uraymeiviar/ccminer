@@ -332,6 +332,7 @@ extern int scanhash_x15(int thr_id, struct work* work, uint32_t max_nonce, unsig
 extern int scanhash_x16r(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_x16s(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_x17(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_xevan(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_zr5(int thr_id, struct work *work, uint32_t max_nonce, unsigned long *hashes_done);
 
 extern int scanhash_scrypt(int thr_id, struct work *work, uint32_t max_nonce, unsigned long *hashes_done,
@@ -400,6 +401,7 @@ extern void free_x15(int thr_id);
 extern void free_x16r(int thr_id);
 extern void free_x16s(int thr_id);
 extern void free_x17(int thr_id);
+extern void free_xevan(int thr_id);
 extern void free_zr5(int thr_id);
 //extern void free_sha256d(int thr_id);
 extern void free_scrypt(int thr_id);
@@ -715,7 +717,7 @@ struct tx {
 	uint32_t len;
 };
 
-#define MAX_NONCES 2
+#define MAX_NONCES 4
 struct work {
 	uint32_t data[48];
 	uint32_t target[8];

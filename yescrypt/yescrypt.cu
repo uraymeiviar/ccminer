@@ -59,14 +59,15 @@ void yescryptr32_hash(void *state, const void *input)
 	yescrypt_hash_base(state, input, 4096, 32, 1, "WaviBanana", 10);
 }
 
-int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
-	uint32_t *ptarget, uint32_t max_nonce, unsigned long *hashes_done,
+int scanhash_yescrypt_base(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done,
 	const uint32_t N, const uint32_t r, const uint32_t p,
 	const char *key, const size_t key_len) {
 	static __thread uint32_t *d_hash1 = NULL;
 	static __thread uint32_t *d_hash2 = NULL;
 	static __thread uint32_t *d_hash3 = NULL;
 	static __thread uint32_t *d_hash4 = NULL;
+	uint32_t *pdata = work->data;
+    uint32_t *ptarget = work->target;
 
 	const uint32_t first_nonce = pdata[19];
 
@@ -128,7 +129,7 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 		if (throughputmax > (props.totalGlobalMem - 256 * 1024 * 1024) / ((520 + 2 * r * (N + 16 * p)) * sizeof(uint32_t)))
 #endif
 		{
-			applog(LOG_ERR, "Memory Error");
+			applog(LOG_ERR, "Memory Error, mem %d",props.totalGlobalMem);
 			mining_has_stopped[thr_id] = true;
 			cudaStreamDestroy(gpustream[thr_id]);
 			proper_exit(2);
@@ -155,6 +156,7 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 
 	yescrypt_setTarget(thr_id, pdata, key, key_len);
 
+	int warn = 0;
 	do {
 		uint32_t foundNonce[2] = { 0, 0 };
 
@@ -169,92 +171,83 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 
 		*hashes_done = pdata[19] - first_nonce + throughput;
 
-		if (foundNonce[0] != 0 && foundNonce[0] < max_nonce)
-		{
-			const uint32_t Htarg = ptarget[7];
-			uint32_t _ALIGN(64) vhash64[8] = { 0 };
-			if (opt_verify)
-			{
-				be32enc(&endiandata[19], foundNonce[0]);
-				yescrypt_hash_base(vhash64, endiandata, N, r, p, key, key_len);
-			}
-			if (vhash64[7] <= Htarg && fulltest(vhash64, ptarget)) {
-				int res = 1;
-				// check if there was some other ones...
-				*hashes_done = pdata[19] - first_nonce + throughput;
-				if (foundNonce[1] != 0 && foundNonce[1] < max_nonce) {
-					if (opt_verify)
-					{
-						be32enc(&endiandata[19], foundNonce[1]);
-						yescrypt_hash_base(vhash64, endiandata, N, r, p, key, key_len);
-					}
-					if (vhash64[7] <= Htarg && fulltest(vhash64, ptarget))
-					{
-						pdata[21] = foundNonce[1];
-						res++;
-						if (opt_benchmark)  applog(LOG_INFO, "GPU #%d Found second nonce %08x", thr_id, foundNonce[1]);
-					}
-					else
-					{
-						if (vhash64[7] != Htarg) // don't show message if it is equal but fails fulltest
-							applog(LOG_WARNING, "GPU #%d: result does not validate on CPU!", dev_id);
-					}
-				}
-				pdata[19] = foundNonce[0];
-				if (opt_benchmark) applog(LOG_INFO, "GPU #%d Found nonce % 08x", thr_id, foundNonce[0]);
-				return res;
-			}
-			else
-			{
-				if (vhash64[7] != Htarg) // don't show message if it is equal but fails fulltest
-					applog(LOG_WARNING, "GPU #%d: result does not validate on CPU!", dev_id);
-			}
-		}
+		work->valid_nonces = 0;
+        for(int n=0 ; n<2 ; n++){
+            if (foundNonce[n] != 0)
+            {
+                const uint32_t Htarg = ptarget[7];
+                uint32_t _ALIGN(64) vhash[8];
+                work->nonces[work->valid_nonces] = foundNonce[n];
+                be32enc(&endiandata[19], foundNonce[n]);
+                yescrypt_hash_base(vhash, endiandata, N, r, p, key, key_len);
+    
+                if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
+                    bn_set_target_ratio(work, vhash, work->valid_nonces);
+                    if(work->nonces[work->valid_nonces] + 1 > pdata[19]){
+                        pdata[19] = work->nonces[work->valid_nonces] + 1; 
+                    }
+                    work->valid_nonces++;
+                }
+                else if (vhash[7] > Htarg) {
+                    gpu_increment_reject(thr_id);
+                    if (!warn) {
+                        warn++;
+                        pdata[19] = work->nonces[work->valid_nonces] + 1;
+                        continue;
+                    } else {
+                        if (!opt_quiet)
+                            gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU! ( %08x > %08x )", foundNonce[n],vhash[7],Htarg);
+                        warn = 0;
+                    }
+                }
+            }
+        }
 
-		pdata[19] += throughput;
+        if(work->valid_nonces > 0){
+            if (work->valid_nonces > 1)
+			    applog(LOG_WARNING, "Found multiple nonces : %d, from GPU #%d (%s)", work->valid_nonces, thr_id, device_name[dev_id]);
+            return work->valid_nonces;
+        }
 
-	} while (!work_restart[thr_id].restart && ((uint64_t)max_nonce > ((uint64_t)(pdata[19]) + (uint64_t)throughput)));
+        if ((uint64_t)throughput + pdata[19] >= max_nonce) {
+            pdata[19] = max_nonce;
+            break;
+        }
 
-	*hashes_done = pdata[19] - first_nonce;
-	return 0;
+        pdata[19] += throughput;
+
+    } while (pdata[19] < max_nonce && !work_restart[thr_id].restart);
+
+    *hashes_done = pdata[19] - first_nonce;
+    return 0;
 }
 
 int scanhash_yescrypt(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
-	uint32_t *pdata = work->data;
-    uint32_t *ptarget = work->target;
 	if (yescrypt_param_N == 0) yescrypt_param_N = 2048;
 	if (yescrypt_param_r == 0) yescrypt_param_r = 8;
 	if (yescrypt_param_p == 0) yescrypt_param_p = 1;
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, yescrypt_param_N, yescrypt_param_r, yescrypt_param_p, yescrypt_key, yescrypt_key_len);
+	return  scanhash_yescrypt_base(thr_id, work, max_nonce, hashes_done, yescrypt_param_N, yescrypt_param_r, yescrypt_param_p, yescrypt_key, yescrypt_key_len);
 }
 
 int scanhash_yescryptr8(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
-	uint32_t *pdata = work->data;
-    uint32_t *ptarget = work->target;
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 2048, 8, 1, "Client Key", 10);
+	return  scanhash_yescrypt_base(thr_id, work, max_nonce, hashes_done, 2048, 8, 1, "Client Key", 10);
 }
 
 int scanhash_yescryptr16(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
-	uint32_t *pdata = work->data;
-    uint32_t *ptarget = work->target;
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 1, "Client Key", 10);
+	return  scanhash_yescrypt_base(thr_id, work, max_nonce, hashes_done, 4096, 16, 1, "Client Key", 10);
 }
 
 int scanhash_yescryptr16v2(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
-	uint32_t *pdata = work->data;
-    uint32_t *ptarget = work->target;
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 16, 4, "PPTPPubKey", 10);
+	return  scanhash_yescrypt_base(thr_id, work, max_nonce, hashes_done, 4096, 16, 4, "PPTPPubKey", 10);
 }
 
 int scanhash_yescryptr32(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
-	uint32_t *pdata = work->data;
-    uint32_t *ptarget = work->target;
-	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 32, 1, "WaviBanana", 10);
+	return  scanhash_yescrypt_base(thr_id, work, max_nonce, hashes_done, 4096, 32, 1, "WaviBanana", 10);
 }
 
 extern "C" void free_yescrypt(int thr_id)

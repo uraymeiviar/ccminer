@@ -28,7 +28,7 @@ extern "C"  long device_sm[MAX_GPUS];
 extern cudaStream_t gpustream[MAX_GPUS];
 extern "C" short device_mpcount[MAX_GPUS];
 extern int cuda_arch[MAX_GPUS];
-extern bool mining_has_stopped[MAX_GPUS];
+extern volatile bool mining_has_stopped[MAX_GPUS];
 
 // common functions
 extern void cuda_check_cpu_init_multi(int thr_id, uint32_t threads);

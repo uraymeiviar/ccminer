@@ -897,7 +897,7 @@ int share_result(int result, int pooln, double sharediff, const char *reason)
 		sprintf(solved, " solved: %u", p->solved_count);
 	}
 
-	applog(LOG_NOTICE, "%s %s%s : %lu/%lu (%s)",
+	applog(LOG_NOTICE, "%s %s%s: %lu/%lu %s",
 			s, flag, solved,
 			p->accepted_count,
 			p->accepted_count + p->rejected_count,

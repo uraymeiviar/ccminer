@@ -657,7 +657,9 @@ double bn_convert_nbits(const uint32_t nbits);
 void bn_nbits_to_uchar(const uint32_t nBits, uchar *target);
 double bn_hash_target_ratio(uint32_t* hash, uint32_t* target);
 void bn_store_hash_target_ratio(uint32_t* hash, uint32_t* target, struct work* work, int nonce);
+void bn_store_hash_target_ratio_noverify(uint32_t* target, struct work* work, int nonce);
 void bn_set_target_ratio(struct work* work, uint32_t* hash, int nonce);
+void bn_set_target_ratio_noverify(struct work* work, int nonce);
 void work_set_target_ratio(struct work* work, uint32_t* hash);
 
 // bench

@@ -512,32 +512,42 @@ extern "C" int scanhash_x16r(int thr_id, struct work* work, uint32_t max_nonce, 
             uint32_t nonce = h_resNonces[thr_id][n];
             if (nonce != UINT32_MAX)
             {
-                const uint32_t Htarg = ptarget[7];
-                uint32_t _ALIGN(64) vhash[8];
-                work->nonces[work->valid_nonces] = nonce;
-                be32enc(&endiandata[19], nonce);
-                x16r_hash(vhash, endiandata);
-    
-                if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
-                    bn_set_target_ratio(work, vhash, work->valid_nonces);
+				if(!opt_verify){
+					work->nonces[work->valid_nonces] = nonce;
+					bn_set_target_ratio_noverify(work, work->valid_nonces);
                     if(work->nonces[work->valid_nonces] + 1 > pdata[19]){
                         pdata[19] = work->nonces[work->valid_nonces] + 1; 
                     }
                     work->valid_nonces++;
-                }
-                else if (vhash[7] > Htarg) {
-                    // x11+ coins could do some random error, but not on retry
-                    gpu_increment_reject(thr_id);
-                    if (!warn) {
-                        warn++;
-                        pdata[19] = work->nonces[work->valid_nonces] + 1;
-                        continue;
-                    } else {
-                        if (!opt_quiet)
-                            gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU! ( %08x > %08x )", nonce,vhash[7],Htarg);
-                        warn = 0;
-                    }
-                }
+				}
+				else{
+					const uint32_t Htarg = ptarget[7];
+					uint32_t _ALIGN(64) vhash[8];
+					work->nonces[work->valid_nonces] = nonce;
+					be32enc(&endiandata[19], nonce);
+					x16r_hash(vhash, endiandata);
+		
+					if (vhash[7] <= Htarg && fulltest(vhash, ptarget)) {
+						bn_set_target_ratio(work, vhash, work->valid_nonces);
+						if(work->nonces[work->valid_nonces] + 1 > pdata[19]){
+							pdata[19] = work->nonces[work->valid_nonces] + 1; 
+						}
+						work->valid_nonces++;
+					}
+					else if (vhash[7] > Htarg) {
+						// x11+ coins could do some random error, but not on retry
+						gpu_increment_reject(thr_id);
+						if (!warn) {
+							warn++;
+							pdata[19] = work->nonces[work->valid_nonces] + 1;
+							continue;
+						} else {
+							if (!opt_quiet)
+								gpulog(LOG_WARNING, thr_id, "result for %08x does not validate on CPU! ( %08x > %08x )", nonce,vhash[7],Htarg);
+							warn = 0;
+						}
+					}
+				}
             }
         }
 

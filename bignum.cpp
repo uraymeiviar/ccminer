@@ -86,11 +86,27 @@ extern "C" void bn_store_hash_target_ratio(uint32_t* hash, uint32_t* target, str
 	work->sharediff[nonce] = work->targetdiff * work->shareratio[nonce];
 }
 
+extern "C" void bn_store_hash_target_ratio_noverify(uint32_t* target, struct work* work, int nonce)
+{
+	// only if the option is enabled (to reduce cpu usage)
+	if (!opt_showdiff) return;
+	if (nonce < 0 || nonce >= MAX_NONCES) return;
+
+	work->shareratio[nonce] = 0;
+	work->sharediff[nonce] = 0;
+}
+
 // new method to save all nonce(s) share diff/ration
 extern "C" void bn_set_target_ratio(struct work* work, uint32_t* hash, int nonce)
 {
 	bn_store_hash_target_ratio(hash, work->target, work, nonce);
 }
+
+extern "C" void bn_set_target_ratio_noverify(struct work* work, int nonce)
+{
+	bn_store_hash_target_ratio_noverify(work->target, work, nonce);
+}
+
 
 // compat (only store single nonce share diff per work)
 extern "C" void work_set_target_ratio(struct work* work, uint32_t* hash)

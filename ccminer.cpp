@@ -879,8 +879,13 @@ int share_result(int result, int pooln, double sharediff, const char *reason)
 	global_hashrate = llround(hashrate);
 
 	format_hashrate(hashrate, s);
-	if (opt_showdiff)
-		sprintf(suppl, "diff %.3f best %.2f net:%.1f", sharediff, p->best_share,net_diff);
+	if (opt_showdiff){
+		if(!opt_verify){
+			sprintf(suppl, "diff --- net:%.1f", net_diff);
+		}else{
+			sprintf(suppl, "diff %.3f best %.2f net:%.1f", sharediff, p->best_share,net_diff);
+		}
+	}
 	else // accepted percent
 		sprintf(suppl, "%.2f%% best %.2f", 100. * p->accepted_count / (p->accepted_count + p->rejected_count), p->best_share);
 
@@ -4049,6 +4054,7 @@ void parse_arg(int key, char *arg)
 		break;
 	case 1024:
 		opt_verify = false;
+		applog(LOG_INFO, "CPU verification is disabled");
 		break;
 	case 'l': /* --launch-config */
 		{

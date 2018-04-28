@@ -206,6 +206,8 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  xevan/xevan_whirlpool512.cu \
 			  xevan/xevan_sha512.cu \
 			  xevan/xevan.cu \
+			  yescrypt/yescrypt.cu \
+			  yescrypt/cuda_yescrypt.cu \
 			  scrypt.cpp scrypt-jane.cpp \
     		  scrypt/blake.cu \
     		  scrypt/keccak.cu \
@@ -243,12 +245,12 @@ endif
 ccminer_LDADD += -lcuda
 
 nvcc_ARCH :=
-nvcc_ARCH += -gencode=arch=compute_70,code=\"sm_70,compute_70\"
-nvcc_ARCH += -gencode=arch=compute_62,code=\"sm_62,compute_62\"
+#nvcc_ARCH += -gencode=arch=compute_70,code=\"sm_70,compute_70\"
+#nvcc_ARCH += -gencode=arch=compute_62,code=\"sm_62,compute_62\"
 nvcc_ARCH += -gencode=arch=compute_61,code=\"sm_61,compute_61\"
-nvcc_ARCH += -gencode=arch=compute_53,code=\"sm_53,compute_53\"
-nvcc_ARCH += -gencode=arch=compute_52,code=\"sm_52,compute_52\"
-nvcc_ARCH += -gencode=arch=compute_50,code=\"sm_50,compute_50\"
+#nvcc_ARCH += -gencode=arch=compute_53,code=\"sm_53,compute_53\"
+#nvcc_ARCH += -gencode=arch=compute_52,code=\"sm_52,compute_52\"
+#nvcc_ARCH += -gencode=arch=compute_50,code=\"sm_50,compute_50\"
 #nvcc_ARCH += -gencode=arch=compute_35,code=\"sm_35,compute_35\"
 #nvcc_ARCH += -gencode=arch=compute_30,code=\"sm_30,compute_30\"
 

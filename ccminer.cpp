@@ -239,6 +239,12 @@ int opt_api_mcast_port = 4068;
 bool opt_stratum_stats = false;
 int cryptonight_fork = 1;
 
+char *yescrypt_key = NULL;
+size_t yescrypt_key_len = 0;
+uint32_t yescrypt_param_N = 0;
+uint32_t yescrypt_param_r = 0;
+uint32_t yescrypt_param_p = 0;
+
 static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
@@ -354,6 +360,8 @@ Options:\n\
   -b, --api-bind=port   IP:port for the miner API (default: 127.0.0.1:4068), 0 disabled\n\
       --api-remote      Allow remote control, like pool switching, imply --api-allow=0/0\n\
       --api-allow=...   IP/mask of the allowed api client(s), 0/0 for all\n\
+	  --yescrypt-param  set params(N,r,p) for yescrypt\n\
+	  --yescrypt-key    set key for yescrypt\n
       --max-temp=N      Only mine if gpu temp is less than specified value\n\
       --max-rate=N[KMG] Only mine if net hashrate is less than specified value\n\
       --max-diff=N      Only mine if net difficulty is less than specified value\n\
@@ -483,6 +491,8 @@ struct option options[] = {
 	{ "diff-multiplier", 1, NULL, 'm' },
 	{ "diff-factor", 1, NULL, 'f' },
 	{ "diff", 1, NULL, 'f' }, // compat
+	{ "yescrypt-param", 1, NULL, 1084 },
+	{ "yescrypt-key", 1, NULL, 1085 },
 	{ 0, 0, 0, 0 }
 };
 
@@ -2169,6 +2179,13 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		case ALGO_EQUIHASH:
 			equi_work_set_target(work, sctx->job.diff / opt_difficulty);
 			break;
+		case ALGO_YESCRYPT:
+		case ALGO_YESCRYPTR8:
+		case ALGO_YESCRYPTR16:
+		case ALGO_YESCRYPTR16V2:
+		case ALGO_YESCRYPTR32:
+			diff_to_target(work->target, sctx->job.diff / (65536.0 * opt_difficulty));
+			break;
 		default:
 			work_set_target(work, sctx->job.diff / opt_difficulty);
 	}
@@ -2671,7 +2688,14 @@ static void *miner_thread(void *userdata)
 			}
 		}
 
-		max64 *= (uint32_t)thr_hashrates[thr_id];
+		/* adjust max_nonce to meet target scan time */
+		uint32_t max64time;
+		if(have_stratum)
+			max64time = LP_SCANTIME;
+		else
+			max64time = (uint32_t)max(1, scan_time + g_work_time - time(NULL));
+
+		max64 = max64time * (uint32_t)thr_hashrates[thr_id];
 
 		/* on start, max64 should not be 0,
 		*    before hashrate is computed */
@@ -2741,6 +2765,17 @@ static void *miner_thread(void *userdata)
 				break;
 			case ALGO_XEVAN:
 				minmax = 0x300000;
+				break;
+			case ALGO_YESCRYPT:
+			case ALGO_YESCRYPTR8:
+				minmax = 15000 * max64time;
+				break;
+			case ALGO_YESCRYPTR16:
+				minmax = 4000 * max64time;
+				break;
+			case ALGO_YESCRYPTR16V2:
+			case ALGO_YESCRYPTR32:
+				minmax = 2000 * max64time;
 				break;
 			}
 			max64 = max(minmax - 1, max64);
@@ -2997,6 +3032,21 @@ static void *miner_thread(void *userdata)
 			break;
 		case ALGO_XEVAN:
 			rc = scanhash_xevan(thr_id, &work, max_nonce, &hashes_done);
+			break;
+		case ALGO_YESCRYPT:
+			rc = scanhash_yescrypt(thr_id, &work, max_nonce, &hashes_done);
+			break;
+		case ALGO_YESCRYPTR8:
+			rc = scanhash_yescryptr8(thr_id, &work, max_nonce, &hashes_done);
+			break;
+		case ALGO_YESCRYPTR16:
+			rc = scanhash_yescryptr16(thr_id, &work,max_nonce, &hashes_done);
+			break;
+		case ALGO_YESCRYPTR16V2:
+			rc = scanhash_yescryptr16v2(thr_id, &work,max_nonce, &hashes_done);
+			break;
+		case ALGO_YESCRYPTR32:
+			rc = scanhash_yescryptr32(thr_id, &work, max_nonce, &hashes_done);
 			break;
 		case ALGO_ZR5:
 			rc = scanhash_zr5(thr_id, &work, max_nonce, &hashes_done);
@@ -4301,7 +4351,41 @@ void parse_arg(int key, char *arg)
 			show_usage_and_exit(1);
 		opt_difficulty = 1.0/d;
 		break;
-
+	case 1084:
+		{
+			char *pch = arg;
+			v = atoi(pch);
+			if (v < 1) {
+				printf("param N value out of range\n");
+				printf("Try --help for more information!\n");
+				exit(EXIT_FAILURE);
+			}
+			else yescrypt_param_N = v;
+			pch = strpbrk(pch, ",");
+			if (pch != NULL) pch++;
+			v = atoi(pch);
+			if (v < 1 || v > 128) {
+				printf("param r value out of range\n");
+				printf("Try --help for more information!\n");
+				exit(EXIT_FAILURE);
+			}
+			else yescrypt_param_r = v;
+			pch = strpbrk(pch, ",");
+			if (pch != NULL) pch++;
+			v = atoi(pch);
+			if (v < 1) {
+				printf("param p value out of range\n");
+				printf("Try --help for more information!\n");
+				exit(EXIT_FAILURE);
+			}
+			else yescrypt_param_p = v;
+		}
+		break;
+	case 1085:
+		yescrypt_key = (char *)malloc(strlen(arg) + 1);
+		strcpy(yescrypt_key, arg);
+		yescrypt_key_len = strlen(arg);
+		break;
 	/* PER POOL CONFIG OPTIONS */
 
 	case 1100: /* pool name */

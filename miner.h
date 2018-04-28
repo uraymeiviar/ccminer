@@ -334,6 +334,11 @@ extern int scanhash_x16s(int thr_id, struct work* work, uint32_t max_nonce, unsi
 extern int scanhash_x17(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_xevan(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 extern int scanhash_zr5(int thr_id, struct work *work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_yescrypt(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_yescryptr8(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_yescryptr16(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_yescryptr16v2(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
+extern int scanhash_yescryptr32(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done);
 
 extern int scanhash_scrypt(int thr_id, struct work *work, uint32_t max_nonce, unsigned long *hashes_done,
 	unsigned char *scratchbuf, struct timeval *tv_start, struct timeval *tv_end);
@@ -402,6 +407,7 @@ extern void free_x16r(int thr_id);
 extern void free_x16s(int thr_id);
 extern void free_x17(int thr_id);
 extern void free_xevan(int thr_id);
+extern void free_yescrypt(int thr_id);
 extern void free_zr5(int thr_id);
 //extern void free_sha256d(int thr_id);
 extern void free_scrypt(int thr_id);
@@ -530,7 +536,7 @@ struct option {
 };
 #endif
 extern int options_count();
-
+extern bool opt_verify;
 extern bool opt_benchmark;
 extern bool opt_debug;
 extern bool opt_quiet;
@@ -576,7 +582,7 @@ extern long  device_sm[MAX_GPUS];
 extern uint32_t device_plimit[MAX_GPUS];
 extern uint32_t gpus_intensity[MAX_GPUS];
 extern int opt_cudaschedule;
-
+extern unsigned int cudaschedule;
 extern int cryptonight_fork;
 
 // cuda.cpp

@@ -25,8 +25,10 @@
 
 extern "C" short device_map[MAX_GPUS];
 extern "C"  long device_sm[MAX_GPUS];
+extern cudaStream_t gpustream[MAX_GPUS];
 extern "C" short device_mpcount[MAX_GPUS];
 extern int cuda_arch[MAX_GPUS];
+extern bool mining_has_stopped[MAX_GPUS];
 
 // common functions
 extern void cuda_check_cpu_init_multi(int thr_id, uint32_t threads);
@@ -291,6 +293,24 @@ uint64_t andor(uint64_t a, uint64_t b, uint64_t c)
 #else
 	return ((a | b) & c) | (a & b);
 #endif
+}
+
+// device asm 32 for pluck
+static __device__ __forceinline__
+uint32_t andor32(uint32_t a, uint32_t b, uint32_t c) {
+	uint32_t result;
+#ifndef __CUDA_ARCH__
+	asm("{ .reg .u32 m,n,o;\n\t"
+		"and.b32 m,  %1, %2;\n\t"
+		" or.b32 n,  %1, %2;\n\t"
+		"and.b32 o,   n, %3;\n\t"
+		" or.b32 %0,  m, o ;\n\t"
+		"}\n\t"
+		: "=r"(result) : "r"(a), "r"(b), "r"(c));
+#else
+	result = ((a | b) & c) | (a & b);
+#endif
+	return result;
 }
 
 // device asm for x17

@@ -81,6 +81,7 @@ struct workio_cmd {
 	int pooln;
 };
 
+bool opt_verify = true;
 bool opt_debug = false;
 bool opt_debug_diff = false;
 bool opt_debug_threads = false;
@@ -145,6 +146,8 @@ int8_t device_pstate[MAX_GPUS] = { -1, -1 };
 int32_t device_led[MAX_GPUS] = { -1, -1 };
 int opt_led_mode = 0;
 int opt_cudaschedule = -1;
+unsigned int cudaschedule = cudaDeviceScheduleBlockingSync;
+volatile bool mining_has_stopped[MAX_GPUS];
 static bool opt_keep_clocks = false;
 
 // un-linked to cmdline scrypt options (useless)
@@ -248,76 +251,79 @@ uint32_t yescrypt_param_p = 0;
 static char const usage[] = "\
 Usage: " PROGRAM_NAME " [OPTIONS]\n\
 Options:\n\
-  -a, --algo=ALGO       specify the hash algorithm to use\n\
-			bastion     Hefty bastion\n\
-			bcd         BitcoinDiamond\n\
-			bitcore     Timetravel-10\n\
-			blake       Blake 256 (SFR)\n\
-			blake2s     Blake2-S 256 (NEVA)\n\
-			blakecoin   Fast Blake 256 (8 rounds)\n\
-			bmw         BMW 256\n\
-			cryptolight AEON cryptonight (MEM/2)\n\
-			cryptonight XMR cryptonight (V1)\n\
-			c11/flax    X11 variant\n\
-			decred      Decred Blake256\n\
-			deep        Deepcoin\n\
-			equihash    Zcash Equihash\n\
-			dmd-gr      Diamond-Groestl\n\
-			fresh       Freshcoin (shavite 80)\n\
-			fugue256    Fuguecoin\n\
-			graft       Cryptonight v8\n\
-			groestl     Groestlcoin\n"
-#ifdef WITH_HEAVY_ALGO
-"			heavy       Heavycoin\n"
-#endif
-"			hmq1725     Doubloons / Espers\n\
-			hsr         X13+SM3\n\
-			jackpot     JHA v8\n\
-			keccak      Deprecated Keccak-256\n\
-			keccakc     Keccak-256 (CreativeCoin)\n\
-			lbry        LBRY Credits (Sha/Ripemd)\n\
-			luffa       Joincoin\n\
-			lyra2       CryptoCoin\n\
-			lyra2v2     VertCoin\n\
-			lyra2z      ZeroCoin (3rd impl)\n\
-			myr-gr      Myriad-Groestl\n\
-			monero      XMR cryptonight (v7)\n\
-			neoscrypt   FeatherCoin, Phoenix, UFO...\n\
-			nist5       NIST5 (TalkCoin)\n\
-			penta       Pentablake hash (5x Blake 512)\n\
-			phi         BHCoin\n\
-			polytimos   Politimos\n\
-			quark       Quark\n\
-			qubit       Qubit\n\
-			sha256d     SHA256d (bitcoin)\n\
-			sha256t     SHA256 x3\n\
-			sia         SIA (Blake2B)\n\
-			sib         Sibcoin (X11+Streebog)\n\
-			scrypt      Scrypt\n\
-			scrypt-jane Scrypt-jane Chacha\n\
-			skein       Skein SHA2 (Skeincoin)\n\
-			skein2      Double Skein (Woodcoin)\n\
-			skunk       Skein Cube Fugue Streebog\n\
-			stellite    Cryptonight v3\n\
-			s3          S3 (1Coin)\n\
-			timetravel  Machinecoin permuted x8\n\
-			tribus      Denarius\n\
-			vanilla     Blake256-8 (VNL)\n\
-			veltor      Thorsriddle streebog\n\
-			whirlcoin   Old Whirlcoin (Whirlpool algo)\n\
-			whirlpool   Whirlpool algo\n\
-			x11evo      Permuted x11 (Revolver)\n\
-			x11         X11 (DarkCoin)\n\
-			x12         X12 (GalaxyCash)\n\
-			x13         X13 (MaruCoin)\n\
-			x14         X14\n\
-			x15         X15\n\
-			x16r        X16R (Raven)\n\
-			x16s	    X16S (Pidgeon)\n\
-			x17         X17\n\
-			xevan		Bitsend\n\
-			wildkeccak  Boolberry\n\
-			zr5         ZR5 (ZiftrCoin)\n\
+  -a, --algo=ALGO          specify the hash algorithm to use\n\
+			bastion        Hefty bastion\n\
+			bcd            BitcoinDiamond\n\
+			bitcore        Timetravel-10\n\
+			blake          Blake 256 (SFR)\n\
+			blake2s        Blake2-S 256 (NEVA)\n\
+			blakecoin      Fast Blake 256 (8 rounds)\n\
+			bmw            BMW 256\n\
+			cryptolight    AEON cryptonight (MEM/2)\n\
+			cryptonight    XMR cryptonight (V1)\n\
+			c11/flax       X11 variant\n\
+			decred         Decred Blake256\n\
+			deep           Deepcoin\n\
+			equihash       Zcash Equihash\n\
+			dmd-gr         Diamond-Groestl\n\
+			fresh          Freshcoin (shavite 80)\n\
+			fugue256       Fuguecoin\n\
+			graft          Cryptonight v8\n\
+			groestl        Groestlcoin\n\
+			heavy          Heavycoin\n\
+			hmq1725        Doubloons / Espers\n\
+			hsr            X13+SM3\n\
+			jackpot        JHA v8\n\
+			keccak         Deprecated Keccak-256\n\
+			keccakc        Keccak-256 (CreativeCoin)\n\
+			lbry           LBRY Credits (Sha/Ripemd)\n\
+			luffa          Joincoin\n\
+			lyra2          CryptoCoin\n\
+			lyra2v2        VertCoin\n\
+			lyra2z         ZeroCoin (3rd impl)\n\
+			myr-gr         Myriad-Groestl\n\
+			monero         XMR cryptonight (v7)\n\
+			neoscrypt      FeatherCoin, Phoenix, UFO...\n\
+			nist5          NIST5 (TalkCoin)\n\
+			penta          Pentablake hash (5x Blake 512)\n\
+			phi            BHCoin\n\
+			polytimos      Politimos\n\
+			quark          Quark\n\
+			qubit          Qubit\n\
+			sha256d        SHA256d (bitcoin)\n\
+			sha256t        SHA256 x3\n\
+			sia            SIA (Blake2B)\n\
+			sib            Sibcoin (X11+Streebog)\n\
+			scrypt         Scrypt\n\
+			scrypt-jane    Scrypt-jane Chacha\n\
+			skein          Skein SHA2 (Skeincoin)\n\
+			skein2         Double Skein (Woodcoin)\n\
+			skunk          Skein Cube Fugue Streebog\n\
+			stellite       Cryptonight v3\n\
+			s3             S3 (1Coin)\n\
+			timetravel     Machinecoin permuted x8\n\
+			tribus         Denarius\n\
+			vanilla        Blake256-8 (VNL)\n\
+			veltor         Thorsriddle streebog\n\
+			whirlcoin      Old Whirlcoin (Whirlpool algo)\n\
+			whirlpool      Whirlpool algo\n\
+			x11evo         Permuted x11 (Revolver)\n\
+			x11            X11 (DarkCoin)\n\
+			x12            X12 (GalaxyCash)\n\
+			x13            X13 (MaruCoin)\n\
+			x14            X14\n\
+			x15            X15\n\
+			x16r           X16R (Raven)\n\
+			x16s	       X16S (Pidgeon)\n\
+			x17            X17\n\
+			xevan		   Bitsend\n\
+			yescrypt       Globlboost-Y (BSTY) or any params\n\
+            yescryptr8     BitZeny (ZNY)\n\
+            yescryptr16    Yenten (YTN)\n\
+            yescryptr16v2  PPTP\n\
+            yescryptr32    WAVI\n\
+			wildkeccak     Boolberry\n\
+			zr5            ZR5 (ZiftrCoin)\n\
   -d, --devices         Comma separated list of CUDA devices to use.\n\
                         Device IDs start counting from 0! Alternatively takes\n\
                         string names of your cards like gtx780ti or gt640#2\n\
@@ -351,6 +357,7 @@ Options:\n\
       --no-longpoll     disable X-Long-Polling support\n\
       --no-stratum      disable X-Stratum support\n\
       --no-extranonce   disable extranonce subscribe on stratum\n\
+	  --no-cpu-verify   don't verify the found results\n\
   -q, --quiet           disable per-thread hashmeter output\n\
       --no-color        disable colored output\n\
   -D, --debug           enable debug output\n\
@@ -361,7 +368,7 @@ Options:\n\
       --api-remote      Allow remote control, like pool switching, imply --api-allow=0/0\n\
       --api-allow=...   IP/mask of the allowed api client(s), 0/0 for all\n\
 	  --yescrypt-param  set params(N,r,p) for yescrypt\n\
-	  --yescrypt-key    set key for yescrypt\n
+	  --yescrypt-key    set key for yescrypt\n\
       --max-temp=N      Only mine if gpu temp is less than specified value\n\
       --max-rate=N[KMG] Only mine if net hashrate is less than specified value\n\
       --max-diff=N      Only mine if net difficulty is less than specified value\n\
@@ -375,12 +382,12 @@ Options:\n\
       --plimit=100W     Set the gpu power limit (352.21+ driver)\n"
 #else /* via nvapi.dll */
 "\
-      --mem-clock=3505  Set the gpu memory boost clock\n\
-      --mem-clock=+500  Set the gpu memory offset\n\
-      --gpu-clock=1150  Set the gpu engine boost clock\n\
-      --plimit=100      Set the gpu power limit in percentage\n\
-      --tlimit=80       Set the gpu thermal limit in degrees\n\
-      --led=100         Set the logo led level (0=disable, 0xFF00FF for RVB)\n"
+	  --mem-clock=3505  Set the gpu memory boost clock\n\
+	  --mem-clock=+500  Set the gpu memory offset\n\
+	  --gpu-clock=1150  Set the gpu engine boost clock\n\
+	  --plimit=100      Set the gpu power limit in percentage\n\
+	  --tlimit=80       Set the gpu thermal limit in degrees\n\
+	  --led=100         Set the logo led level (0=disable, 0xFF00FF for RVB)\n"
 #endif
 #ifdef HAVE_SYSLOG_H
 "\
@@ -433,6 +440,7 @@ struct option options[] = {
 	{ "no-getwork", 0, NULL, 1010 },
 	{ "no-longpoll", 0, NULL, 1003 },
 	{ "no-stratum", 0, NULL, 1007 },
+	{ "no-cpu-verify", 0, NULL, 1024},
 	{ "no-autotune", 0, NULL, 1004 },  // scrypt
 	{ "interactive", 1, NULL, 1050 },  // scrypt
 	{ "lookup-gap", 1, NULL, 'L' },    // scrypt
@@ -2016,12 +2024,10 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 		case ALGO_SIA:
 			// getwork over stratum, no merkle to generate
 			break;
-#ifdef WITH_HEAVY_ALGO
 		case ALGO_HEAVY:
 		case ALGO_MJOLLNIR:
 			heavycoin_hash(merkle_root, sctx->job.coinbase, (int)sctx->job.coinbase_size);
 			break;
-#endif
 		case ALGO_FUGUE256:
 		case ALGO_GROESTL:
 		case ALGO_KECCAK:
@@ -2036,11 +2042,9 @@ static bool stratum_gen_work(struct stratum_ctx *sctx, struct work *work)
 
 	for (i = 0; i < sctx->job.merkle_count; i++) {
 		memcpy(merkle_root + 32, sctx->job.merkle[i], 32);
-#ifdef WITH_HEAVY_ALGO
 		if (opt_algo == ALGO_HEAVY || opt_algo == ALGO_MJOLLNIR)
 			heavycoin_hash(merkle_root, merkle_root, 64);
 		else
-#endif
 			sha256d(merkle_root, merkle_root, 64);
 	}
 
@@ -2890,14 +2894,12 @@ static void *miner_thread(void *userdata)
 		case ALGO_BCD:
 			rc = scanhash_bcd(thr_id, &work, max_nonce, &hashes_done);
 			break;
-#ifdef WITH_HEAVY_ALGO
 		case ALGO_HEAVY:
 			rc = scanhash_heavy(thr_id, &work, max_nonce, &hashes_done, work.maxvote, HEAVYCOIN_BLKHDR_SZ);
 			break;
 		case ALGO_MJOLLNIR:
 			rc = scanhash_heavy(thr_id, &work, max_nonce, &hashes_done, 0, MNR_BLKHDR_SZ);
 			break;
-#endif
 		case ALGO_KECCAK:
 		case ALGO_KECCAKC:
 			rc = scanhash_keccak256(thr_id, &work, max_nonce, &hashes_done);
@@ -4045,6 +4047,9 @@ void parse_arg(int key, char *arg)
 	case 1004:
 		opt_autotune = false;
 		break;
+	case 1024:
+		opt_verify = false;
+		break;
 	case 'l': /* --launch-config */
 		{
 			char *last = NULL, *pch = strtok(arg,",");
@@ -4265,6 +4270,21 @@ void parse_arg(int key, char *arg)
 		break;
 	case 1025: // cuda-schedule
 		opt_cudaschedule = atoi(arg);
+		switch(atoi(arg))
+		{
+			case 0:
+				cudaschedule = cudaDeviceScheduleBlockingSync;
+				break;
+			case 1:
+				cudaschedule = cudaDeviceScheduleSpin;
+				break;
+			case 2:
+				cudaschedule = cudaDeviceScheduleYield;
+				break;
+			default:
+				applog(LOG_WARNING, "Warning: invalid value for --cuda-schedule option");
+				cudaschedule = cudaDeviceScheduleBlockingSync;
+		}
 		break;
 	case 1060: // max-temp
 		d = atof(arg);

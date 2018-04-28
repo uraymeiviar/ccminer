@@ -10,7 +10,7 @@ extern "C" {
 }
 
 extern void yescrypt_cpu_init(int thr_id, int threads, uint32_t *d_hash1, uint32_t *d_hash2, uint32_t *d_hash3, uint32_t *d_hash4);
-extern void yescrypt_setTarget(int thr_id, uint32_t pdata[20], char *key, uint32_t key_len);
+extern void yescrypt_setTarget(int thr_id, uint32_t pdata[20], const char *key, uint32_t key_len);
 extern void yescrypt_cpu_hash_32(int thr_id, uint32_t threads, uint32_t startNounce, uint32_t *resultnonces, uint32_t target, const uint32_t N, const uint32_t r, const uint32_t p);
 extern void yescrypt_cpu_free(int thr_id);
 
@@ -20,10 +20,11 @@ extern uint32_t yescrypt_param_N;
 extern uint32_t yescrypt_param_r;
 extern uint32_t yescrypt_param_p;
 
-char *client_key;    // true for GlobalBoost-Y
+const char *client_key;    // true for GlobalBoost-Y
 size_t client_key_len = 0xff;
+static bool init[MAX_GPUS] = { 0 };
 
-void yescrypt_hash_base(void *state, const void *input, const uint32_t N, const uint32_t r, const uint32_t p, char *key, const size_t key_len)
+void yescrypt_hash_base(void *state, const void *input, const uint32_t N, const uint32_t r, const uint32_t p, const char *key, const size_t key_len)
 {
 	if (client_key_len == 0xff)
 	{
@@ -59,13 +60,13 @@ void yescryptr32_hash(void *state, const void *input)
 }
 
 int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
-	uint32_t *ptarget, uint32_t max_nonce, uint32_t *hashes_done,
+	uint32_t *ptarget, uint32_t max_nonce, unsigned long *hashes_done,
 	const uint32_t N, const uint32_t r, const uint32_t p,
-	char *key, const size_t key_len) {
-	static THREAD uint32_t *d_hash1 = nullptr;
-	static THREAD uint32_t *d_hash2 = nullptr;
-	static THREAD uint32_t *d_hash3 = nullptr;
-	static THREAD uint32_t *d_hash4 = nullptr;
+	const char *key, const size_t key_len) {
+	static __thread uint32_t *d_hash1 = NULL;
+	static __thread uint32_t *d_hash2 = NULL;
+	static __thread uint32_t *d_hash3 = NULL;
+	static __thread uint32_t *d_hash4 = NULL;
 
 	const uint32_t first_nonce = pdata[19];
 
@@ -112,8 +113,7 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 	if (opt_benchmark)
 		((uint32_t*)ptarget)[7] = 0x00ff;
 
-	static THREAD bool init = false;
-	if (!init)
+	if (!init[thr_id])
 	{
 		applog(LOG_WARNING, "Using intensity %.3f (%d threads)", throughput2intensity(throughputmax), throughputmax);
 		CUDA_SAFE_CALL(cudaSetDevice(dev_id));
@@ -146,7 +146,7 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 		yescrypt_cpu_init(thr_id, throughputmax, d_hash1, d_hash2, d_hash3, d_hash4);
 		mining_has_stopped[thr_id] = false;
 
-		init = true;
+		init[thr_id] = true;
 	}
 
 	uint32_t endiandata[20];
@@ -160,9 +160,11 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 
 		yescrypt_cpu_hash_32(thr_id, throughput, pdata[19], foundNonce, ptarget[7], N, r, p);
 
-		if (stop_mining)
+		if (abort_flag)
 		{
-			mining_has_stopped[thr_id] = true; cudaStreamDestroy(gpustream[thr_id]); pthread_exit(nullptr);
+			mining_has_stopped[thr_id] = true; 
+			cudaStreamDestroy(gpustream[thr_id]); 
+			pthread_exit(NULL);
 		}
 
 		*hashes_done = pdata[19] - first_nonce + throughput;
@@ -219,6 +221,8 @@ int scanhash_yescrypt_base(int thr_id, uint32_t *pdata,
 
 int scanhash_yescrypt(int thr_id, struct work* work, uint32_t max_nonce, unsigned long *hashes_done)
 {
+	uint32_t *pdata = work->data;
+    uint32_t *ptarget = work->target;
 	if (yescrypt_param_N == 0) yescrypt_param_N = 2048;
 	if (yescrypt_param_r == 0) yescrypt_param_r = 8;
 	if (yescrypt_param_p == 0) yescrypt_param_p = 1;
@@ -251,4 +255,17 @@ int scanhash_yescryptr32(int thr_id, struct work* work, uint32_t max_nonce, unsi
 	uint32_t *pdata = work->data;
     uint32_t *ptarget = work->target;
 	return  scanhash_yescrypt_base(thr_id, pdata, ptarget, max_nonce, hashes_done, 4096, 32, 1, "WaviBanana", 10);
+}
+
+extern "C" void free_yescrypt(int thr_id)
+{
+    if (!init[thr_id])
+        return;
+
+    cudaDeviceSynchronize();
+
+    yescrypt_cpu_free(thr_id);
+
+    cudaDeviceSynchronize();
+    init[thr_id] = false;
 }

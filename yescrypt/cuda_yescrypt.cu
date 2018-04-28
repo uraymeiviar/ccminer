@@ -1036,7 +1036,7 @@ void yescrypt_cpu_init(int thr_id, int threads, uint32_t *d_hash1, uint32_t *d_h
 }
 
 __host__
-void yescrypt_setTarget(int thr_id, uint32_t pdata[20], char *key, uint32_t key_len)
+void yescrypt_setTarget(int thr_id, uint32_t pdata[20], const char *key, uint32_t key_len)
 {
 	uint32_t h[8], data[32];
 

@@ -19,6 +19,8 @@
 
 #include "cuda_runtime.h"
 
+cudaStream_t gpustream[MAX_GPUS] = { 0 };
+
 #ifdef __cplusplus
 /* miner.h functions are declared in C type, not C++ */
 extern "C" {

@@ -130,6 +130,12 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  sph/sph_sha2.c \
 			  sph/blake2s.c \
 			  sph/fugue.c \
+			  sph/sha256_Y.h \
+			  sph/sha256_Y.c \
+			  sph/yescrypt.h \
+			  sph/yescrypt-platform.h \
+			  sph/yescrypt-opt.c \
+			  sph/yescrypt-common.c \
 			  polytimos.cu \
 			  lbry/lbry.cu \
 			  lbry/cuda_sha256_lbry.cu \
@@ -206,6 +212,8 @@ ccminer_SOURCES	= elist.h miner.h compat.h \
 			  xevan/xevan_whirlpool512.cu \
 			  xevan/xevan_sha512.cu \
 			  xevan/xevan.cu \
+			  yescrypt/yescrypt.cu \
+			  yescrypt/cuda_yescrypt.cu \
 			  scrypt.cpp scrypt-jane.cpp \
     		  scrypt/blake.cu \
     		  scrypt/keccak.cu \
